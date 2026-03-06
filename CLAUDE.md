@@ -27,6 +27,20 @@ When updating a classifier to add missing subcommands, follow this process:
 6. **Build, test, install** — `go build ./...`, `go test ./...`, `go install ./cmd/agent-perms`
 7. **Verify with explain** — Run `agent-perms explain <cli> <subcommand>` for new entries
 
+## Classification Decisions
+
+Use conservative defaults when a command executes arbitrary user-controlled code
+or can hide write/destructive behavior behind a helper interface.
+
+- `git submodule foreach` is `admin local` because it executes arbitrary shell
+  in each submodule.
+- `git gui` is `write local` because the UI supports staging/committing and other
+  state mutations.
+- `go test` is `write local` because tests execute project code and can mutate
+  local state.
+- Default/recommended profile is `write-local` for practical day-to-day usage;
+  `read` remains available for stricter environments.
+
 ## Commit Practices
 
 ### During Development

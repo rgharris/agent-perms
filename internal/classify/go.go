@@ -17,12 +17,11 @@
 // quickly" threshold that justifies admin — consistent with "git gc"
 // (admin local) in the git classifier.
 //
-// # Why "go test" is read
+// # Why "go test" is write
 //
-// Tests verify the codebase; they do not modify source files. Build cache
-// writes are infrastructure side effects, not meaningful state mutations —
-// the same reasoning that classifies "go vet" as read despite
-// touching the build cache.
+// Tests execute arbitrary project code and can mutate local state via test
+// side effects (files, sockets, subprocesses). To keep the model conservative,
+// go test is treated as write local.
 //
 // # Why "go build" is flag-dependent
 //
@@ -44,7 +43,7 @@ var goSimpleTiers = map[string]types.Tier{
 	"list":    types.TierReadLocal,
 	"doc":     types.TierReadLocal,
 	"vet":     types.TierReadLocal,
-	"test":    types.TierReadLocal,
+	"test":    types.TierWriteLocal,
 	"bug":     types.TierReadLocal, // opens browser with bug report template
 	"tool":    types.TierReadLocal, // runs bundled go tools (vet, pprof, trace, etc.)
 

@@ -192,6 +192,7 @@ func TestClaudeInit(t *testing.T) {
 			wantContains: []string{
 				"exec read local -- *",
 				"exec read remote -- *",
+				"exec write local -- *",
 				"agent-perms claude md",
 			},
 		},
@@ -401,7 +402,7 @@ func TestCodexInit(t *testing.T) {
 				"agent-perms",
 				"exec", "read",
 				`decision = "allow"`,
-				"profile: read",
+				"profile: write-local",
 			},
 		},
 		{

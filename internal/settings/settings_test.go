@@ -171,6 +171,50 @@ func TestValidateMissingSeparator(t *testing.T) {
 	}
 }
 
+func TestValidateEmptyExecRuleDoesNotPanic(t *testing.T) {
+	settings := `{
+		"permissions": {
+			"allow": ["Bash(agent-perms exec    )"],
+			"deny": ["Bash(gh *)"]
+		}
+	}`
+	diags := Validate([]byte(settings))
+	if len(diags) == 0 {
+		t.Fatal("expected diagnostic for empty exec rule")
+	}
+	found := false
+	for _, d := range diags {
+		if d.Severity == SeverityError && strings.Contains(d.Message, "missing action before '--'") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected missing action diagnostic, got: %+v", diags)
+	}
+}
+
+func TestValidateMalformedExecRuleShape(t *testing.T) {
+	settings := `{
+		"permissions": {
+			"allow": ["Bash(agent-perms exec)"],
+			"deny": ["Bash(gh *)"]
+		}
+	}`
+	diags := Validate([]byte(settings))
+	if len(diags) == 0 {
+		t.Fatal("expected diagnostics for malformed exec rule shape")
+	}
+	found := false
+	for _, d := range diags {
+		if d.Severity == SeverityError && strings.Contains(d.Message, "malformed agent-perms exec rule") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected malformed-rule diagnostic, got: %+v", diags)
+	}
+}
+
 func TestValidateAllowWithoutDeny(t *testing.T) {
 	settings := `{
 		"permissions": {

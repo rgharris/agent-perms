@@ -65,7 +65,7 @@ type Diagnostic struct {
 
 // ProfileNames returns the list of available profile names.
 func ProfileNames() []string {
-	return []string{"read", "write-local", "full-write"}
+	return []string{"write-local", "read", "full-write"}
 }
 
 // ProfileDescriptions returns a map of profile name to human-readable description.
@@ -409,11 +409,25 @@ func validateRule(rule string, supportedCLIs map[string]bool) []Diagnostic {
 
 	m := agentPermsExecRe.FindStringSubmatch(rule)
 	if m == nil {
+		if strings.Contains(rule, "agent-perms exec") {
+			return []Diagnostic{{
+				Severity:   SeverityError,
+				Message:    fmt.Sprintf("malformed agent-perms exec rule: %s", rule),
+				Suggestion: "Use format: Bash(agent-perms exec <action> <scope> -- <cli> ...)",
+			}}
+		}
 		return nil // not an exec rule pattern
 	}
 
 	inner := m[1] // everything after "exec " inside Bash()
 	parts := strings.Fields(inner)
+	if len(parts) == 0 {
+		return []Diagnostic{{
+			Severity:   SeverityError,
+			Message:    fmt.Sprintf("missing action before '--' in rule: %s", rule),
+			Suggestion: "Add an action/scope and command, e.g. Bash(agent-perms exec read local -- gh pr list)",
+		}}
+	}
 
 	// Check 1: missing -- separator.
 	// Rules like "exec admin *" are valid deny globs (they catch all admin

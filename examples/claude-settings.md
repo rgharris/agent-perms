@@ -70,10 +70,11 @@ Remote pushes (tier `write remote`) still prompt you.
 }
 ```
 
-### Go: read-only (verify, test, check compilation)
+### Go: read-only (vet + compile checks)
 
-Claude can run go tests, vet, and build checks automatically. Writes (format, generate,
-install) and cache-clearing admin ops still require your approval.
+Claude can run `go vet` and compile checks automatically. `go test` is classified
+as `write local` because tests execute arbitrary project code. Writes (format,
+generate, install) and cache-clearing admin ops still require your approval.
 
 ```json
 {

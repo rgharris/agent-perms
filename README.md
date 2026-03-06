@@ -110,6 +110,8 @@ Both Claude Code and Codex use the same three profiles:
 | `write-local`  | Read + local writes (git commit, go fmt, etc.), remote writes prompt, deny admin, sensitive prompts |
 | `full-write`   | Read + write all CLIs (including remote), deny admin, sensitive prompts              |
 
+`write-local` is the recommended default profile for day-to-day development.
+
 ---
 
 ## Claude Code

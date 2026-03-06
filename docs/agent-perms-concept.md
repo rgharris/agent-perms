@@ -115,7 +115,7 @@ agent-perms is a standalone CLI tool that sits between the agent and any support
 
 | Tier | Intent | Examples |
 |------|--------|----------|
-| **read** | Queries, listings, status checks | `gh pr list`, `git log`, `go test`, `pulumi preview` |
+| **read** | Queries, listings, status checks | `gh pr list`, `git log`, `go vet`, `pulumi preview` |
 | **write** | Creates, updates, modifies state | `gh pr create`, `git commit`, `go fmt`, `pulumi up` |
 | **admin** | Destructive or irreversible actions | `gh repo delete`, `git reset --hard`, `pulumi destroy` |
 

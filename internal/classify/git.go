@@ -133,7 +133,7 @@ var gitSimpleTiers = map[string]types.Tier{
 	"prune-packed":         types.TierWriteLocal,
 
 	// GUI / browser (read local — opens a UI but doesn't modify state)
-	"gui":      types.TierReadLocal,
+	"gui":      types.TierWriteLocal, // UI supports add/commit/stage actions
 	"gitk":     types.TierReadLocal,
 	"citool":   types.TierWriteLocal, // graphical commit tool
 	"gitweb":   types.TierReadLocal,
@@ -540,16 +540,19 @@ func classifyGitNotes(args []string) Result {
 }
 
 // classifyGitSubmodule classifies "git submodule" based on sub-subcommand.
-//   - status, summary, foreach → read local
+//   - status, summary → read local
+//   - foreach → admin local (executes arbitrary shell in each submodule)
 //   - add, init, update, deinit, sync, absorbgitdirs, set-branch, set-url → write local
 //   - no sub-subcommand defaults to status → read local
 func classifyGitSubmodule(args []string) Result {
-	readSubs := map[string]bool{"status": true, "summary": true, "foreach": true}
+	readSubs := map[string]bool{"status": true, "summary": true}
 	for _, arg := range args {
 		if !strings.HasPrefix(arg, "-") {
 			tier := types.TierWriteLocal
 			if readSubs[arg] {
 				tier = types.TierReadLocal
+			} else if arg == "foreach" {
+				tier = types.TierAdminLocal
 			}
 			return Result{
 				CLI: "git", Subcommand: "submodule",

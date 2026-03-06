@@ -11,7 +11,7 @@ import (
 
 // ProfileNames returns the list of available profile names.
 func ProfileNames() []string {
-	return []string{"read", "write-local", "full-write"}
+	return []string{"write-local", "read", "full-write"}
 }
 
 // GenerateExecPolicy returns Starlark prefix_rule() entries for the given profile.
@@ -306,7 +306,7 @@ Actions: read, write, admin
 Scopes: local (all go ops are local)
 
     agent-perms exec read local -- go version
-    agent-perms exec read local -- go test ./...
+    agent-perms exec write local -- go test ./...
     agent-perms exec read local -- go vet ./...
     agent-perms exec read local -- go build ./...
     agent-perms exec write local -- go build -o mybinary

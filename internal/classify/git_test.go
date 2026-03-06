@@ -47,6 +47,7 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git checkout", args: []string{"git", "checkout", "main"}, want: types.TierWriteLocal},
 		{name: "git switch", args: []string{"git", "switch", "main"}, want: types.TierWriteLocal},
 		{name: "git restore", args: []string{"git", "restore", "file.go"}, want: types.TierWriteLocal},
+		{name: "git gui", args: []string{"git", "gui"}, want: types.TierWriteLocal},
 
 		// AdminLocal — destructive local
 		{name: "git gc", args: []string{"git", "gc"}, want: types.TierAdminLocal},
@@ -130,6 +131,12 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git reset --mixed", args: []string{"git", "reset", "--mixed", "HEAD~1"}, want: types.TierWriteLocal},
 		{name: "git reset --hard", args: []string{"git", "reset", "--hard", "HEAD"}, want: types.TierAdminLocal},
 		{name: "git reset --hard origin/main", args: []string{"git", "reset", "--hard", "origin/main"}, want: types.TierAdminLocal},
+
+		// git submodule
+		{name: "git submodule (default status)", args: []string{"git", "submodule"}, want: types.TierReadLocal},
+		{name: "git submodule status", args: []string{"git", "submodule", "status"}, want: types.TierReadLocal},
+		{name: "git submodule foreach", args: []string{"git", "submodule", "foreach", "echo", "hi"}, want: types.TierAdminLocal},
+		{name: "git submodule update", args: []string{"git", "submodule", "update", "--init"}, want: types.TierWriteLocal},
 
 		// Global flags before subcommand
 		{name: "git -C dir status", args: []string{"git", "-C", "/tmp/repo", "status"}, want: types.TierReadLocal},

@@ -2,24 +2,32 @@
 
 **Fine-grained, tiered permissions for AI agent CLI access.**
 
-`agent-perms` is an ergonomic guardrail — not a security sandbox. It makes agent automation predictable by adding semantic classification to commands that agent platforms can only match as opaque strings. It won't stop a determined attacker or a malicious agent, but it gives well-intentioned agents (and the humans supervising them) clear, auditable intent signals so safe work runs automatically and risky work prompts.
+`agent-perms` is an ergonomic guardrail — not a security sandbox. It makes agent automation predictable by adding deterministic, semantic classification to commands that agent platforms can only match as opaque strings. It won't stop a determined attacker or a malicious agent, but it gives well-intentioned agents (and the humans supervising them) clear, auditable intent signals so safe work runs automatically and risky work prompts.
 
 ## 2-Minute Demo
 
 Use this to see the value before reading full docs:
 
 ```sh
+# Install
+go install github.com/rgharris/agent-perms/cmd/agent-perms@main
+
 # 1) Ask for a tier
 agent-perms explain gh api --method DELETE /repos/OWNER/REPO
+
+# Later in this README your agent permissions will be configured to block
+# all commands matching `agent-perms exec admin *`
+# so while this command would work, your agent cannot execute it
+# `agent-perms exec admin remote -- gh api --method DELETE /repos/OWNER/REPO`
 
 # 2) Try the wrong claim (blocked with required tier + suggestion)
 agent-perms exec read remote -- gh api --method DELETE /repos/OWNER/REPO
 
 # 3) Run a safe command with correct claim (passes through)
-agent-perms exec read remote -- gh pr list
+agent-perms explain gh api repos/pulumi/esc/pulls/595/comments
+# Your agent permissions will be configured to allow `agent-perms exec read *`
+agent-perms exec read remote -- gh api repos/pulumi/esc/pulls/595/comments
 ```
-
-If step 2 blocks and step 3 runs, your setup is doing the core job.
 
 ## Who This Is For
 
@@ -38,12 +46,12 @@ Not the main target:
 
 **Tier model:** Commands are classified across two dimensions:
 
-| | Local | Remote |
-|---|---|---|
-| **Read** | Inspect local state (`git log`, `go vet`) | Query remote APIs (`gh pr list`, `git fetch`) |
-| **Read-sensitive** | — | Expose secrets (`gh auth token`, `pulumi env open`) |
-| **Write** | Mutate local state (`git commit`, `go fmt`) | Mutate remote state (`git push`, `gh pr create`) |
-| **Admin** | Destructive local ops (`git reset --hard`, `go clean -cache`) | Destructive remote ops (`git push --force`, `gh repo delete`) |
+|                    | Local                                                         | Remote                                                        |
+| ------------------ | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Read**           | Inspect local state (`git log`, `go vet`)                     | Query remote APIs (`gh pr list`, `git fetch`)                 |
+| **Read-sensitive** | —                                                             | Expose secrets (`gh auth token`, `pulumi env open`)           |
+| **Write**          | Mutate local state (`git commit`, `go fmt`)                   | Mutate remote state (`git push`, `gh pr create`)              |
+| **Admin**          | Destructive local ops (`git reset --hard`, `go clean -cache`) | Destructive remote ops (`git push --force`, `gh repo delete`) |
 
 Tiers use exact matching — `write` does not cover `read`, and `read` does not cover `read-sensitive`. Each tier is independent.
 
@@ -86,13 +94,13 @@ In both cases, the agent sees instructions like "run CLI commands through `agent
 
 Agent allowlists match command strings; they have no visibility into flags. This makes common cases impossible to handle safely:
 
-| Command                                     | Problem                                                                                            |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `git reset --hard`                          | Can't distinguish `--soft` (safe) from `--hard` (destroys uncommitted work)                        |
-| `git push --force`                          | Can't distinguish a normal push from one that rewrites remote history                              |
+| Command                                     | Problem                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `git reset --hard`                          | Can't distinguish `--soft` (safe) from `--hard` (destroys uncommitted work)                                   |
+| `git push --force`                          | Can't distinguish a normal push from one that rewrites remote history                                         |
 | `gh api /repos/.../pulls/.../comments`      | Common read path for PR context, but command-string allowlists cannot separate it from write/delete API calls |
-| `gh api --method DELETE /repos/…`           | Same `gh api` subcommand, but method/path can permanently delete data                              |
-| `git config --get` vs `git config --global` | Same subcommand, opposite risk: one reads a value, the other mutates global config                  |
+| `gh api --method DELETE /repos/…`           | Same `gh api` subcommand, but method/path can permanently delete data                                         |
+| `git config --get` vs `git config --global` | Same subcommand, opposite risk: one reads a value, the other mutates global config                            |
 
 `agent-perms` classifies commands with full flag awareness, so `git reset` and `git reset --hard` land in different tiers. Your agent's allowlist rules stay simple; the semantic work happens inside `agent-perms`.
 
@@ -132,7 +140,7 @@ $ agent-perms claude init
 
 You'll be prompted to choose a profile. If you already have a `~/.claude/settings.json`, rules are merged automatically. See [Claude Code setup](#claude-code) for details.
 
-### Codex CLI *(experimental)*
+### Codex CLI _(experimental)_
 
 One command generates exec policy rules and `AGENTS.md`:
 
@@ -174,11 +182,11 @@ result:     admin remote
 
 Both Claude Code and Codex use the same three profiles:
 
-| Profile        | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `read`         | Read access for all CLIs (non-sensitive); writes prompt; admin denied                |
-| `write-local`  | Read + local writes (git commit, go fmt, etc.); remote writes prompt; sensitive prompts; admin denied |
-| `full-write`   | Read + write for all CLIs (including remote); sensitive prompts; admin denied        |
+| Profile       | Description                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| `read`        | Read access for all CLIs (non-sensitive); writes prompt; admin denied                                 |
+| `write-local` | Read + local writes (git commit, go fmt, etc.); remote writes prompt; sensitive prompts; admin denied |
+| `full-write`  | Read + write for all CLIs (including remote); sensitive prompts; admin denied                         |
 
 `write-local` is the recommended default profile for day-to-day development.
 
@@ -217,7 +225,7 @@ See [`examples/claude-settings.md`](examples/claude-settings.md) for granular pr
 
 ---
 
-## Codex CLI *(experimental)*
+## Codex CLI _(experimental)_
 
 ### 1. Generate rules
 
@@ -293,5 +301,5 @@ This project is a practical near-term tool and proof-of-concept for semantic CLI
 ## Docs
 
 - [Claude Code settings examples](examples/claude-settings.md)
-- [Codex CLI settings examples](examples/codex-settings.md) *(experimental)*
+- [Codex CLI settings examples](examples/codex-settings.md) _(experimental)_
 - [Concept & future direction](docs/agent-perms-concept.md)

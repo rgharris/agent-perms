@@ -4,6 +4,23 @@
 
 `agent-perms` is an ergonomic guardrail — not a security sandbox. It makes agent automation predictable by adding semantic classification to commands that agent platforms can only match as opaque strings. It won't stop a determined attacker or a malicious agent, but it gives well-intentioned agents (and the humans supervising them) clear, auditable intent signals so safe work runs automatically and risky work prompts.
 
+## 2-Minute Demo
+
+Use this to see the value before reading full docs:
+
+```sh
+# 1) Ask for a tier
+agent-perms explain gh api --method DELETE /repos/OWNER/REPO
+
+# 2) Try the wrong claim (blocked with required tier + suggestion)
+agent-perms exec read remote -- gh api --method DELETE /repos/OWNER/REPO
+
+# 3) Run a safe command with correct claim (passes through)
+agent-perms exec read remote -- gh pr list
+```
+
+If step 2 blocks and step 3 runs, your setup is doing the core job.
+
 ## Who This Is For
 
 Primary user: a team lead or platform-minded engineer running AI agents across repos who wants deterministic, auditable command intent policy without maintaining large allowlists.
@@ -129,25 +146,6 @@ You'll be prompted to choose a profile and confirm writing. This creates `~/.cod
 > enforcement work, but Codex's permission model differs significantly from
 > Claude Code's and has not been tested as extensively. If you hit issues,
 > please [open an issue](https://github.com/rgharris/agent-perms/issues).
-
----
-
-## 2-Minute Demo
-
-Use this to see the value before reading full docs:
-
-```sh
-# 1) Ask for a tier
-agent-perms explain gh api --method DELETE /repos/OWNER/REPO
-
-# 2) Try the wrong claim (blocked with required tier + suggestion)
-agent-perms exec read remote -- gh api --method DELETE /repos/OWNER/REPO
-
-# 3) Run a safe command with correct claim (passes through)
-agent-perms exec read remote -- gh pr list
-```
-
-If step 2 blocks and step 3 runs, your setup is doing the core job.
 
 ---
 

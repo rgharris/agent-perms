@@ -18,6 +18,7 @@ func TestGenerateExecPolicy_Profiles(t *testing.T) {
 			wantContains: []string{
 				`"agent-perms", "exec", "read", "local", "--"`,
 				`"agent-perms", "exec", "read", "remote", "--"`,
+				`"agent-perms", "exec", "read-sensitive"`,
 				`decision = "allow"`,
 				`decision = "prompt"`,
 				`decision = "forbidden"`,
@@ -29,6 +30,9 @@ func TestGenerateExecPolicy_Profiles(t *testing.T) {
 				`pattern = ["go"]`,
 				`pattern = ["pulumi"]`,
 				"profile: read",
+			},
+			wantAbsent: []string{
+				`"agent-perms", "exec", "read-sensitive", "--"`,
 			},
 		},
 		{

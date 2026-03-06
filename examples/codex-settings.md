@@ -18,7 +18,7 @@ agent-perms as a permission layer for `gh`, `git`, `pulumi`, `go`, and other CLI
 ## How It Works
 
 Instead of writing individual `prefix_rule()` entries for every CLI subcommand,
-you allow `agent-perms exec <action> [<scope>] --` patterns. Codex enforces
+you allow `agent-perms exec <action> <scope> --` patterns. Codex enforces
 the exec policy match — if Codex tries to run `gh repo delete` directly, the
 `forbidden` rule for `gh` blocks it. `agent-perms exec` itself enforces tier
 semantics independently as a second check.
@@ -86,13 +86,17 @@ Generated rules:
 ```starlark
 # Allow all read operations through agent-perms
 prefix_rule(
-    pattern = ["agent-perms", "exec", "read", "--"],
+    pattern = ["agent-perms", "exec", "read", "local", "--"],
+    decision = "allow",
+)
+prefix_rule(
+    pattern = ["agent-perms", "exec", "read", "remote", "--"],
     decision = "allow",
 )
 
 # Prompt for sensitive read operations (commands that expose secrets)
 prefix_rule(
-    pattern = ["agent-perms", "exec", "read-sensitive", "--"],
+    pattern = ["agent-perms", "exec", "read-sensitive"],
     decision = "prompt",
 )
 
@@ -218,7 +222,7 @@ Test how Codex will classify a specific command:
 ```console
 $ codex execpolicy check --pretty \
     --rules ~/.codex/rules/agent-perms.rules \
-    -- agent-perms exec read -- gh pr list
+    -- agent-perms exec read remote -- gh pr list
 ```
 
 Use `agent-perms explain` to check what tier a command requires:

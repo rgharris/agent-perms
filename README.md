@@ -4,6 +4,19 @@
 
 `agent-perms` is an ergonomic guardrail — not a security sandbox. It makes agent automation predictable by adding semantic classification to commands that agent platforms can only match as opaque strings. It won't stop a determined attacker or a malicious agent, but it gives well-intentioned agents (and the humans supervising them) clear, auditable intent signals so safe work runs automatically and risky work prompts.
 
+## Who This Is For
+
+Primary user: a team lead or platform-minded engineer running AI agents across repos who wants deterministic, auditable command intent policy without maintaining large allowlists.
+
+Best fit:
+
+- Teams using Claude Code and/or Codex that want one shared policy language (`read`/`write`/`admin` + `local`/`remote`)
+- Teams that care about reviewability and reproducible behavior more than maximum autonomous speed
+
+Not the main target:
+
+- Users running in fully bypassed/yolo modes who intentionally skip policy gates
+
 **Supported CLIs:** `gh` (GitHub CLI), `git`, `go`, `pulumi`
 
 **Tier model:** Commands are classified across two dimensions:
@@ -86,6 +99,8 @@ go install github.com/rgharris/agent-perms/cmd/agent-perms@main
 
 Make sure `$(go env GOPATH)/bin` is on your `PATH`.
 
+Current install is Go-first by design (works well for teams already on Go tooling). Additional install options (for example, package manager releases) are planned.
+
 ---
 
 ## Quick Setup
@@ -114,6 +129,25 @@ You'll be prompted to choose a profile and confirm writing. This creates `~/.cod
 > enforcement work, but Codex's permission model differs significantly from
 > Claude Code's and has not been tested as extensively. If you hit issues,
 > please [open an issue](https://github.com/rgharris/agent-perms/issues).
+
+---
+
+## 2-Minute Demo
+
+Use this to see the value before reading full docs:
+
+```sh
+# 1) Ask for a tier
+agent-perms explain gh api --method DELETE /repos/OWNER/REPO
+
+# 2) Try the wrong claim (blocked with required tier + suggestion)
+agent-perms exec read remote -- gh api --method DELETE /repos/OWNER/REPO
+
+# 3) Run a safe command with correct claim (passes through)
+agent-perms exec read remote -- gh pr list
+```
+
+If step 2 blocks and step 3 runs, your setup is doing the core job.
 
 ---
 
@@ -237,6 +271,24 @@ See [`examples/codex-settings.md`](examples/codex-settings.md) for profile detai
 - **Unsupported CLIs** — only `gh`, `git`, `go`, and `pulumi` are classified. Other CLIs pass through unclassified and must be handled by platform-level rules.
 
 The outer platform layer (Claude Code deny rules, Codex exec policy `forbidden` entries) is the primary enforcement boundary. `agent-perms` adds semantic classification that the platform cannot express on its own.
+
+## Not A Sandbox: Practical Guidance
+
+Treat `agent-perms` as semantic policy and workflow control, not as your final security boundary.
+
+- Keep platform sandboxing enabled (`workspace-write` / `read-only`) whenever possible
+- Keep direct CLI deny/forbidden rules enabled so agents must route through `agent-perms exec`
+- Keep `--on-unknown=deny` as default outside short evaluation sessions
+- Use `read` or `write-local` profiles by default; escalate intentionally for risky operations
+- If you must run Codex with `--sandbox danger-full-access` (for example, current macOS network caveat), treat `agent-perms` as your primary command-intent gate for that session and keep admin tiers blocked or prompted
+
+## Project Scope
+
+This project is a practical near-term tool and proof-of-concept for semantic CLI classification in agent workflows.
+
+- Goal: make current platforms safer and more predictable today
+- Non-goal: compete head-to-head with major AI platform vendors on full security/runtime stacks
+- If platforms ship strong native subcommand+flag classification, this project can narrow to reference taxonomy, policy examples, and migration support
 
 ---
 

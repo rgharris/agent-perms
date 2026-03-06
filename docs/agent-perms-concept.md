@@ -948,7 +948,48 @@ Per-CLI overrides are the only committed customization feature. Everything below
 
 **Deliberate exclusions (permanent):** No runtime conditionals. No LLM fallback. No per-directory policies. No profile inheritance. No policy language. agent-perms classifies commands — the agent platform enforces policy.
 
-### D.5 Governance & Maintenance
+### D.5 PreToolUse Hook Integration *(not yet implemented)*
+
+Claude Code's [PreToolUse hooks](https://code.claude.com/docs/en/hooks) can use
+agent-perms as a classification engine — an alternative to glob-pattern rules
+where the hook calls agent-perms and approves or blocks based on the classified
+tier.
+
+Planned interface:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-perms hook --profile=write-local"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `agent-perms hook` subcommand would classify the command's tier and compare
+it against the profile. Commands within the profile's allowed tiers pass through;
+commands outside the profile are blocked with an explanation of the required tier.
+
+Advantages over glob patterns:
+- **Flag-aware classification** — `git push` and `git push --force` are distinguished automatically
+- **No per-subcommand rules** — the classification DB handles all supported CLIs
+- **Simpler config** — one hook entry replaces dozens of `Bash()` allow/deny rules
+
+This positions agent-perms as the classification engine *behind* hooks rather
+than a replacement for allowlists. A short hook is simpler and more maintainable
+than custom regex classifiers (cf. Dyad's 627-line Python hook, kornysietsma's
+Rust hook).
+
+### D.6 Governance & Maintenance
 
 - **Two maintainers minimum** (bus factor > 1)
 - **PR-based contribution** with CI validation against CLI help output

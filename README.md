@@ -2,7 +2,16 @@
 
 **Fine-grained, tiered permissions for AI agent CLI access.**
 
-AI coding agents let you allowlist shell commands so they run without prompting you for permission. But those allowlists are difficult to maintain, encouraging overly permissive wildcards like `git *` that give the agent the same access to `gh repo delete` as to `gh pr list`. There's no way to distinguish `git reset --soft` from `git reset --hard`, or a safe `gh api` GET from a destructive DELETE.
+`agent-perms` makes agent automation predictable and safe to scale across teams. Instead of approving brittle command patterns, you approve semantic tiers (`read`, `write`, `admin` across `local`/`remote`). Safe work runs automatically, risky work prompts, and dangerous operations stay blocked by policy.
+
+At a glance:
+
+- Deterministic classification in Go using CLI + subcommand + flags (for example, `git push` vs `git push --force`)
+- Two-layer enforcement: agents are instructed to use `agent-perms`, and direct CLI access is denied by outer rules
+- Exact tier matching: if an agent claims the wrong tier, the command is denied with the required tier
+- One-time setup for Claude Code and Codex (`agent-perms <platform> init`)
+
+AI coding agents let you allowlist shell commands so they run without prompting. Those allowlists are hard to maintain and encourage permissive wildcards like `gh *`, even though agents frequently use `gh api` for routine reads (PR comments, reviews, metadata) and the same command can also mutate or delete data based on flags. They also cannot distinguish `git reset --soft` from `git reset --hard`, or a safe `gh api` GET from a destructive DELETE.
 
 `agent-perms` adds a semantic layer between your agent and your CLIs. You define which _tiers_ run automatically, and the agent declares its intent upfront. One rule replaces dozens of individual command allowlists.
 
@@ -14,32 +23,33 @@ agent-perms exec read remote -- gh pr list
 agent-perms exec read-sensitive remote -- pulumi env open myorg/prod
 
 # Classified as "admin remote" — prompts you
-agent-perms exec admin remote -- gh repo delete my-repo
+agent-perms exec admin remote -- gh api --method DELETE /repos/OWNER/REPO
 
 # Claimed tier must match exactly — wrong tier is denied:
-# ERROR: denied. 'gh repo delete my-repo' requires 'admin remote', claimed 'read remote'.
-agent-perms exec read remote -- gh repo delete my-repo
+# ERROR: denied. 'gh api --method DELETE /repos/OWNER/REPO' requires 'admin remote', claimed 'read remote'.
+agent-perms exec read remote -- gh api --method DELETE /repos/OWNER/REPO
 ```
 
 ### How agents know to use agent-perms
 
-Agents don't discover `agent-perms` on their own — you tell them. The `init` commands for each agent platform inject instructions into the agent's context asking it to wrap CLI commands with `agent-perms exec`:
+Agents do not discover `agent-perms` on their own. The `init` commands for each platform inject instructions that tell the agent to wrap CLI commands with `agent-perms exec`:
 
-- **Claude Code**: `agent-perms claude init` adds a `SessionStart` hook that runs `agent-perms claude md`, which injects usage instructions (the `agent-perms exec` syntax and examples for each CLI) into the session context at startup.
-- **Codex CLI**: `agent-perms codex init` writes an `AGENTS.md` file (loaded automatically by Codex) with the same usage instructions.
+- **Claude Code**: `agent-perms claude init` adds a `SessionStart` hook that runs `agent-perms claude md`, injecting usage instructions (the `agent-perms exec` syntax and examples for each CLI) at session start.
+- **Codex CLI**: `agent-perms codex init` writes an `AGENTS.md` file (loaded automatically by Codex) with the same instructions.
 
-In both cases, the agent sees instructions like "run CLI commands through `agent-perms exec <action> <scope> -- <cli> <subcommand>`" and follows them. The permission rules then ensure the agent _can't_ bypass `agent-perms` by calling CLIs directly — those commands are denied.
+In both cases, the agent sees instructions like "run CLI commands through `agent-perms exec <action> <scope> -- <cli> <subcommand>`" and follows them. Permission rules then ensure the agent _cannot_ bypass `agent-perms` by calling CLIs directly; those commands are denied.
 
 ### Why agent allowlists aren't enough
 
-Agent allowlists match on the command string — they have no visibility into flags. This makes several common cases impossible to handle safely:
+Agent allowlists match command strings; they have no visibility into flags. This makes common cases impossible to handle safely:
 
 | Command                                     | Problem                                                                                            |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `git reset --hard`                          | Can't distinguish `--soft` (safe) from `--hard` (destroys uncommitted work)                        |
 | `git push --force`                          | Can't distinguish a normal push from one that rewrites remote history                              |
-| `gh api --method DELETE /repos/…`           | `gh api` is a raw HTTP client — the method flag determines whether it reads or permanently deletes |
-| `git config --get` vs `git config --global` | Same subcommand, opposite risk: one reads a value, the other mutates system-wide config            |
+| `gh api /repos/.../pulls/.../comments`      | Common read path for PR context, but command-string allowlists cannot separate it from write/delete API calls |
+| `gh api --method DELETE /repos/…`           | Same `gh api` subcommand, but method/path can permanently delete data                              |
+| `git config --get` vs `git config --global` | Same subcommand, opposite risk: one reads a value, the other mutates global config                  |
 
 `agent-perms` classifies commands with full flag awareness, so `git reset` and `git reset --hard` land in different tiers. Your agent's allowlist rules stay simple; the semantic work happens inside `agent-perms`.
 
@@ -69,7 +79,7 @@ You'll be prompted to choose a profile. If you already have a `~/.claude/setting
 
 ### Codex CLI
 
-One command generates exec policy rules and AGENTS.md:
+One command generates exec policy rules and `AGENTS.md`:
 
 ```console
 $ agent-perms codex init
@@ -81,7 +91,7 @@ You'll be prompted to choose a profile and confirm writing. This creates `~/.cod
 
 ## Checking Tiers
 
-Use `agent-perms explain` to see how any command is classified:
+Use `agent-perms explain` to see how a command is classified:
 
 ```console
 $ agent-perms explain gh secret set TOKEN
@@ -106,9 +116,9 @@ Both Claude Code and Codex use the same three profiles:
 
 | Profile        | Description                                                                        |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `read`         | Read all CLIs (not sensitive), writes prompt, deny admin                            |
-| `write-local`  | Read + local writes (git commit, go fmt, etc.), remote writes prompt, deny admin, sensitive prompts |
-| `full-write`   | Read + write all CLIs (including remote), deny admin, sensitive prompts              |
+| `read`         | Read access for all CLIs (non-sensitive); writes prompt; admin denied                |
+| `write-local`  | Read + local writes (git commit, go fmt, etc.); remote writes prompt; sensitive prompts; admin denied |
+| `full-write`   | Read + write for all CLIs (including remote); sensitive prompts; admin denied        |
 
 `write-local` is the recommended default profile for day-to-day development.
 
@@ -141,7 +151,7 @@ $ agent-perms claude validate
 
 ### How it works
 
-Claude Code's glob match (`Bash(agent-perms exec read remote -- gh *)`) is the outer gate — if Claude tries to skip `agent-perms` and run `gh repo delete` directly, the deny rule blocks it. `agent-perms exec` is the inner gate, enforcing tier semantics independently.
+Claude Code's glob match (`Bash(agent-perms exec read remote -- gh *)`) is the outer gate. If Claude tries to skip `agent-perms` and run `gh api --method DELETE ...` directly, the deny rule blocks it. `agent-perms exec` is the inner gate, enforcing tier semantics independently.
 
 See [`examples/claude-settings.md`](examples/claude-settings.md) for granular profiles, per-CLI rules, and mixing broad and fine-grained patterns.
 

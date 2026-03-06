@@ -87,7 +87,7 @@ $ agent-perms claude init
 
 You'll be prompted to choose a profile. If you already have a `~/.claude/settings.json`, rules are merged automatically. See [Claude Code setup](#claude-code) for details.
 
-### Codex CLI
+### Codex CLI *(experimental)*
 
 One command generates exec policy rules and `AGENTS.md`:
 
@@ -96,6 +96,11 @@ $ agent-perms codex init
 ```
 
 You'll be prompted to choose a profile and confirm writing. This creates `~/.codex/rules/agent-perms.rules` and `~/.codex/AGENTS.md`. See [Codex CLI setup](#codex-cli) for details.
+
+> **Note:** Codex support is experimental. The core classification and exec
+> enforcement work, but Codex's permission model differs significantly from
+> Claude Code's and has not been tested as extensively. If you hit issues,
+> please [open an issue](https://github.com/rgharris/agent-perms/issues).
 
 ---
 
@@ -167,7 +172,7 @@ See [`examples/claude-settings.md`](examples/claude-settings.md) for granular pr
 
 ---
 
-## Codex CLI
+## Codex CLI *(experimental)*
 
 ### 1. Generate rules
 
@@ -212,5 +217,5 @@ See [`examples/codex-settings.md`](examples/codex-settings.md) for profile detai
 ## Docs
 
 - [Claude Code settings examples](examples/claude-settings.md)
-- [Codex CLI settings examples](examples/codex-settings.md)
+- [Codex CLI settings examples](examples/codex-settings.md) *(experimental)*
 - [Concept & future direction](docs/agent-perms-concept.md)

@@ -1,10 +1,14 @@
-# agent-perms: Codex CLI Settings Examples
+# agent-perms: Codex CLI Settings Examples *(experimental)*
 
 > **Quick start:** Run `agent-perms codex init --write` to generate both
 > `~/.codex/rules/agent-perms.rules` and `~/.codex/AGENTS.md` in one step.
 > Use `--profile=write-local` or `--profile=full-write` for more permissive defaults.
 >
 > Run `agent-perms codex validate` to check your rules for common issues.
+
+> **Experimental:** Codex support works for core classification and exec
+> enforcement, but Codex's permission model differs significantly from Claude
+> Code's and has not been tested as extensively. Please report issues.
 
 These examples show how to configure Codex CLI's exec policy to use
 agent-perms as a permission layer for `gh`, `git`, `pulumi`, `go`, and other CLIs.

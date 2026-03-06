@@ -2,7 +2,20 @@
 
 **Fine-grained, tiered permissions for AI agent CLI access.**
 
-`agent-perms` makes agent automation predictable and safe to scale across teams. Instead of approving brittle command patterns, you approve semantic tiers (`read`, `write`, `admin` across `local`/`remote`). Safe work runs automatically, risky work prompts, and dangerous operations stay blocked by policy.
+`agent-perms` is an ergonomic guardrail — not a security sandbox. It makes agent automation predictable by adding semantic classification to commands that agent platforms can only match as opaque strings. It won't stop a determined attacker or a malicious agent, but it gives well-intentioned agents (and the humans supervising them) clear, auditable intent signals so safe work runs automatically and risky work prompts.
+
+**Supported CLIs:** `gh` (GitHub CLI), `git`, `go`, `pulumi`
+
+**Tier model:** Commands are classified across two dimensions:
+
+| | Local | Remote |
+|---|---|---|
+| **Read** | Inspect local state (`git log`, `go vet`) | Query remote APIs (`gh pr list`, `git fetch`) |
+| **Read-sensitive** | — | Expose secrets (`gh auth token`, `pulumi env open`) |
+| **Write** | Mutate local state (`git commit`, `go fmt`) | Mutate remote state (`git push`, `gh pr create`) |
+| **Admin** | Destructive local ops (`git reset --hard`, `go clean -cache`) | Destructive remote ops (`git push --force`, `gh repo delete`) |
+
+Tiers use exact matching — `write` does not cover `read`, and `read` does not cover `read-sensitive`. Each tier is independent.
 
 At a glance:
 
@@ -211,6 +224,19 @@ Codex applies the most restrictive decision when multiple rules match (`forbidde
 The exec policy is the outer gate; `agent-perms exec` is the inner gate.
 
 See [`examples/codex-settings.md`](examples/codex-settings.md) for profile details, sandbox mode interaction, and rule precedence.
+
+---
+
+## Known Limitations
+
+`agent-perms` is a guardrail, not a sandbox. It relies on agents following instructions and on outer platform rules denying direct CLI access. It does **not** defend against:
+
+- **Shell wrappers and indirection** — an agent can call `/usr/bin/git` by full path, invoke `env git ...`, or use `command git ...` to bypass deny rules that match only `git`.
+- **Environment variable injection** — setting `GIT_SSH_COMMAND`, `GH_TOKEN`, or similar vars before a command can change what the command does in ways the classifier cannot see.
+- **Git hooks and aliases** — `.git/config` aliases or hook scripts can execute arbitrary code triggered by otherwise-safe commands.
+- **Unsupported CLIs** — only `gh`, `git`, `go`, and `pulumi` are classified. Other CLIs pass through unclassified and must be handled by platform-level rules.
+
+The outer platform layer (Claude Code deny rules, Codex exec policy `forbidden` entries) is the primary enforcement boundary. `agent-perms` adds semantic classification that the platform cannot express on its own.
 
 ---
 

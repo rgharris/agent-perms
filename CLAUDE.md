@@ -9,7 +9,8 @@ When you add a new CLI classifier (a new `internal/classify/<cli>.go` file), upd
 3. **`internal/codex/codex.go`** — add the CLI's examples to `agentsMDContent` (the `codex md` output)
 4. **`README.md`** — add the CLI to the settings example (both `allow` and `deny` arrays)
 5. **`examples/claude-settings.md`** — add example profiles for the new CLI
-6. **`docs/new-clis-to-add.md`** — remove the CLI from the candidates list if it was listed there
+6. **`examples/codex-settings.md`** — add example profiles for the new CLI
+7. **`docs/new-clis-to-add.md`** — remove the CLI from the candidates list if it was listed there
 
 ## Auditing an Existing CLI Classifier
 

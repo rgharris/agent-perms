@@ -37,6 +37,10 @@ agent-perms operates at the exec policy layer. The sandbox still applies indepen
 For example, even if agent-perms allows `git push`, the sandbox in `read-only` mode
 would still block network access.
 
+> **Migration note:** If your config uses `approval_policy = "on-failure"`, note
+> that this option is deprecated. The Codex CLI reference recommends `on-request`
+> for interactive runs or `never` for non-interactive/CI runs.
+
 Recommended sandbox modes per profile:
 
 | agent-perms profile | Recommended sandbox_mode |
@@ -57,8 +61,9 @@ network_access = true
 ```
 
 > **Note:** On macOS, `network_access = true` may be silently ignored by the
-> Seatbelt sandbox. On Linux (Landlock sandbox), it works as expected. If you
-> hit network errors on macOS, use `--sandbox danger-full-access` as a workaround.
+> Seatbelt sandbox ([issue #10390](https://github.com/openai/codex/issues/10390)).
+> On Linux (Landlock sandbox), it works as expected. If you hit network errors
+> on macOS, use `--sandbox danger-full-access` as a workaround.
 
 ---
 
@@ -135,6 +140,39 @@ Codex can read and write everything (local and remote). Only admin operations ar
 ```
 agent-perms codex init --profile=full-write > ~/.codex/rules/agent-perms.rules
 ```
+
+---
+
+## Pairing with Codex Sandbox Settings
+
+Each agent-perms profile pairs well with a specific Codex sandbox configuration:
+
+### Balanced local development (recommended)
+
+```toml
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+network_access = true
+```
+
+Use with `agent-perms codex init --profile=write-local`.
+
+### Strict review / planning mode
+
+```toml
+sandbox_mode = "read-only"
+approval_policy = "on-request"
+```
+
+Use with `agent-perms codex init --profile=read`. In this mode, Codex can only
+run read-tier commands automatically. Write operations prompt via exec policy,
+and the sandbox independently blocks filesystem mutations.
+
+> **Note:** `approval_policy = "untrusted"` restricts to safe reads without
+> prompting for untrusted operations (it does not mean "prompt for everything").
+> Use `on-request` if you want interactive prompts for escalation.
 
 ---
 

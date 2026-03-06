@@ -42,3 +42,27 @@ next, ranked by impact:
   - read: uv run -m pytest, uv run -m ruff check, uv run -m mypy
   - write:local: uv sync, uv pip install, uv run -m ruff format
   - admin:remote: uv run twine upload
+
+## Future Agent Platforms
+
+agent-perms currently targets Claude Code and Codex CLI. These platforms have
+weaker built-in command classification and represent expansion opportunities:
+
+### Cursor
+
+  - Has `beforeShellExecution` hooks and `.cursor/rules/` instruction files
+  - Lacks robust OS-level sandboxing (confirmed by 2026 security analyses)
+  - No semantic command classification
+  - Integration path: instruction-based (like Codex AGENTS.md) + hook-based
+
+### Windsurf
+
+  - Has admin controls for enterprise
+  - Weak built-in granularity for CLI command classification
+  - Integration path: instruction-based
+
+### Gemini CLI
+
+  - Has `tools.core` prefix restriction and Docker/Seatbelt sandbox
+  - `tools.core` is strong at the binary level but lacks subcommand+flag awareness
+  - Integration path: instruction-based + sandbox complement

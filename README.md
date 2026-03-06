@@ -53,6 +53,16 @@ Agent allowlists match command strings; they have no visibility into flags. This
 
 `agent-perms` classifies commands with full flag awareness, so `git reset` and `git reset --hard` land in different tiers. Your agent's allowlist rules stay simple; the semantic work happens inside `agent-perms`.
 
+### Why agent-perms on each platform
+
+Agent platforms are converging on coarse-grained safety mechanisms — sandboxes, pattern matching, hooks — but none has semantic command classification. The gap isn't "too many prompts vs. not enough prompts." It's that no platform can distinguish `git reset --soft` from `git reset --hard`, or a `gh api` GET from a `gh api --method DELETE`, using built-in rules alone.
+
+**Claude Code:** Glob patterns like `Bash(git reset *)` match both safe and destructive variants. Claude Code's own docs [acknowledge this](https://code.claude.com/docs/en/permissions): "Bash permission patterns that try to constrain command arguments are fragile." One `agent-perms exec` rule replaces dozens of pattern entries while adding flag-level classification that globs cannot express. agent-perms also works as the classification engine behind [PreToolUse hooks](https://code.claude.com/docs/en/hooks).
+
+**Codex CLI:** Starlark `prefix_rule()` entries match command prefixes but have no concept of what a command _does_. agent-perms adds semantic intent on top of sandbox and exec policy defaults — biggest value for teams needing auditable, deterministic command policies across CLIs.
+
+**Both platforms:** Teams using both Claude Code and Codex get one semantic policy that works on both. The same `read`/`write`/`admin` tiers apply regardless of which agent runs the command.
+
 ---
 
 ## Install

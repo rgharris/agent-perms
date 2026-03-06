@@ -53,9 +53,11 @@ agent-perms is not an OS-level security boundary. It is a deterministic, fast, a
 
 ## 2. The Problem
 
-### 2.1 Permission Fatigue is Universal
+### 2.1 The Classification Gap
 
-Permission fatigue—where users reflexively approve everything because prompts are too frequent—is the most commonly reported usability issue across all agent platforms:
+Agent platforms are converging on coarse-grained safety mechanisms — sandboxes reduce prompt volume (Claude Code's sandbox cuts prompts by ~84%), exec policies gate command prefixes, and hooks allow custom logic. But none of these mechanisms can classify CLI commands by _intent_. No sandbox, glob pattern, or prefix rule can distinguish `git reset --soft` from `git reset --hard`, or a `gh api` GET from a `gh api --method DELETE`. This is the classification gap.
+
+The symptoms of this gap manifest as permission fatigue — where users reflexively approve everything because prompts lack semantic precision — and as overly permissive policies where teams give up on granularity entirely:
 
 - **Claude Code:** Users report that even simple wildcard patterns don't reliably match, forcing repeated approvals. The community has built third-party hooks in Rust and Python just to work around this. Deny rules have had repeated reliability issues (CVE-2026-25724, Issues #6699, #12918), and sub-agents via the Task tool can bypass deny rules entirely (Issue #25000).
 - **Gemini CLI:** A GitHub issue describes how constant prompting for safe commands causes "click fatigue" leading developers to "habitually approve without scrutiny." The `tools.core` restriction only validates the first command in a pipe chain (Issue #11510, fixed July 2025).
@@ -441,6 +443,8 @@ The community response has been consistent: developers build one-off classificat
 | **ASI07 — Improper Output Handling** | `exec` validates command classification before execution, acting as a validation layer for agent-generated CLI commands |
 | **ASI09 — Logging Deficiencies** | Structured JSON audit logs of all classification and execution decisions |
 
+**NIST AI Agent Standards Initiative** (Feb 2026) — NIST [announced](https://www.nist.gov/news-events/news/2026/02/announcing-ai-agent-standards-initiative-interoperable-and-secure) a standards initiative emphasizing human oversight for consequential actions and scoped permissions. The Federal Register [RFI on AI agent security](https://www.federalregister.gov/documents/2026/01/08/2026-00206/request-for-information-regarding-security-considerations-for-artificial-intelligence-agents) (Jan 2026) calls for auditable, deterministic permission enforcement — aligning directly with agent-perms' structured classification model. For enterprise teams, regulatory compliance is an increasingly practical motivation for adopting semantic command classification over ad-hoc allowlists.
+
 **AWS Kiro Incident** (Dec 2025) — An AI coding agent (Kiro) was granted an operator's full access level. The agent determined the best action was to "delete and recreate the environment," causing a 13-hour outage of AWS Cost Explorer in a mainland China region. A two-human sign-off safeguard failed because it was implemented as a permission (something that could be misconfigured or inherited) rather than an architectural gate external to the agent. This is the exact failure mode agent-perms is designed to prevent: the agent had write+admin access when it only needed read+write. Tier-based classification with an explicit admin gate would have required separate approval for the destructive operation.
 
 **Academic Validation** — Multiple recent papers confirm the need for tool-level least privilege in agent systems:
@@ -469,6 +473,8 @@ OS-level sandboxing is commoditizing — all major agents now ship one (Claude C
 ### 6.5 Competitive Position
 
 No tool currently provides deterministic, per-subcommand read/write/admin classification as a standalone binary. agent-perms occupies an uncontested niche: **semantic CLI command classification**. Every adjacent tool either operates at a different layer (OS, network, MCP) or lacks semantic awareness (pattern matching). The consistent independent arrival at read/write separation — by GitHub (infrastructure), OWASP (standards), community hook authors (tools), and Anthropic's model spec (behavior) — confirms this is the right abstraction.
+
+**Cross-platform policy portability** is a unique advantage no competing tool or platform feature offers. Teams using both Claude Code and Codex — or migrating between agents — define one set of semantic tiers (`read`/`write`/`admin` × `local`/`remote`) that agent-perms enforces identically on both platforms. The same classification of `gh api --method DELETE` as `admin remote` applies whether the command runs through Claude Code's `Bash()` glob rules or Codex's Starlark `prefix_rule()` entries. As agent diversity increases (Cursor, Windsurf, Gemini CLI, Kiro), this portability becomes a stronger differentiator.
 
 ---
 
@@ -815,6 +821,8 @@ If agent-perms ships as an MCP server:
 ### C.1 Claude Code
 
 **Integration quality: Excellent.** Glob-based `Bash()` rules are purpose-built for this pattern.
+
+**Permission model (current as of March 2026):** Claude Code uses a three-tier rule system (`allow`, `ask`, `deny`) with `deny -> ask -> allow` precedence. It supports five permission modes: `default` (prompts on first use), `acceptEdits` (auto-approves file edits), `plan` (read-only analysis), `dontAsk` (auto-denies unless pre-approved — most complementary with agent-perms), and `bypassPermissions` (skips all checks, isolated environments only). Tool-specific rules cover Bash, Read, Edit, WebFetch, MCP, and Agent subagents individually. OS-level sandboxing (Seatbelt on macOS, bubblewrap on Linux) complements permissions as a defense-in-depth layer. PreToolUse hooks can approve, deny, or modify tool calls based on custom logic — agent-perms can serve as the classification engine behind these hooks.
 
 **Setup:** Run `agent-perms claude init` to generate settings with allow/deny rules and a SessionStart hook:
 

@@ -349,6 +349,11 @@ func classifyGHAPI(args []string) Result {
 				fValues = append(fValues, args[i+1])
 				i++
 			}
+		case arg == "--input":
+			hasFFlags = true
+			if i+1 < len(args) {
+				i++ // consume the file path value
+			}
 		case strings.HasPrefix(arg, "-f=") || strings.HasPrefix(arg, "-F="):
 			hasFFlags = true
 			fValues = append(fValues, arg[strings.Index(arg, "=")+1:])

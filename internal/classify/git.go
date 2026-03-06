@@ -275,10 +275,32 @@ func classifyGitPush(args []string) Result {
 			base.FlagEffects = []string{fmt.Sprintf("%s → destructive remote op → admin remote", arg)}
 			return base
 		}
+		// Handle --flag=value forms (e.g., --force-with-lease=ref:sha).
+		if strings.HasPrefix(arg, "--force-with-lease=") || strings.HasPrefix(arg, "--force-if-includes=") {
+			base.Tier = types.TierAdminRemote
+			base.FlagEffects = []string{fmt.Sprintf("%s → destructive remote op → admin remote", arg)}
+			return base
+		}
+		// Handle combined short flags (e.g., -fd = -f + -d).
+		if len(arg) > 2 && arg[0] == '-' && arg[1] != '-' {
+			for _, ch := range arg[1:] {
+				if ch == 'f' || ch == 'd' {
+					base.Tier = types.TierAdminRemote
+					base.FlagEffects = []string{fmt.Sprintf("%s → combined flag contains -%c → admin remote", arg, ch)}
+					return base
+				}
+			}
+		}
 		// Colon-ref delete syntax: git push origin :branch
 		if !strings.HasPrefix(arg, "-") && strings.HasPrefix(arg, ":") {
 			base.Tier = types.TierAdminRemote
 			base.FlagEffects = []string{fmt.Sprintf("%s → colon-ref delete → admin remote", arg)}
+			return base
+		}
+		// Plus-prefix refspec: git push origin +main:main (force-push)
+		if !strings.HasPrefix(arg, "-") && strings.HasPrefix(arg, "+") {
+			base.Tier = types.TierAdminRemote
+			base.FlagEffects = []string{fmt.Sprintf("%s → force-push refspec → admin remote", arg)}
 			return base
 		}
 	}
@@ -365,14 +387,20 @@ func classifyGitTag(args []string) Result {
 
 // classifyGitStash classifies "git stash" based on the sub-subcommand.
 //   - list, show → read local
-//   - everything else (push, pop, apply, drop, branch, clear) → write local
+//   - drop, clear → admin local (destructive, unrecoverable)
+//   - everything else (push, pop, apply, branch) → write local
 //   - no sub-subcommand defaults to "push" → write local
 func classifyGitStash(args []string) Result {
 	for _, arg := range args {
 		if !strings.HasPrefix(arg, "-") {
-			tier := types.TierWriteLocal
-			if arg == "list" || arg == "show" {
+			var tier types.Tier
+			switch arg {
+			case "list", "show":
 				tier = types.TierReadLocal
+			case "drop", "clear":
+				tier = types.TierAdminLocal
+			default:
+				tier = types.TierWriteLocal
 			}
 			return Result{
 				CLI:          "git",
@@ -440,6 +468,21 @@ func classifyGitClean(args []string) Result {
 				BaseTier:     types.TierAdminLocal,
 				BaseTierNote: "git clean (deletes untracked files)",
 				FlagEffects:  []string{fmt.Sprintf("%s → dry-run only → read local", arg)},
+			}
+		}
+		// Handle combined short flags (e.g., -nd = -n + -d).
+		if len(arg) > 2 && arg[0] == '-' && arg[1] != '-' {
+			for _, ch := range arg[1:] {
+				if ch == 'n' {
+					return Result{
+						CLI:          "git",
+						Subcommand:   "clean",
+						Tier:         types.TierReadLocal,
+						BaseTier:     types.TierAdminLocal,
+						BaseTierNote: "git clean (deletes untracked files)",
+						FlagEffects:  []string{fmt.Sprintf("%s → combined flag contains -n → dry-run only → read local", arg)},
+					}
+				}
 			}
 		}
 	}

@@ -63,6 +63,11 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git push --delete", args: []string{"git", "push", "--delete", "origin", "branch"}, want: types.TierAdminRemote},
 		{name: "git push -d", args: []string{"git", "push", "-d", "origin", "branch"}, want: types.TierAdminRemote},
 		{name: "git push origin :branch (colon-ref)", args: []string{"git", "push", "origin", ":branch"}, want: types.TierAdminRemote},
+		{name: "git push +refspec (force-push)", args: []string{"git", "push", "origin", "+main:main"}, want: types.TierAdminRemote},
+		{name: "git push --force-with-lease=ref", args: []string{"git", "push", "--force-with-lease=origin/main"}, want: types.TierAdminRemote},
+		{name: "git push --force-if-includes=ref", args: []string{"git", "push", "--force-if-includes=origin/main"}, want: types.TierAdminRemote},
+		{name: "git push -fd (combined flags)", args: []string{"git", "push", "-fd", "origin", "branch"}, want: types.TierAdminRemote},
+		{name: "git push -fu (combined flags)", args: []string{"git", "push", "-fu", "origin", "main"}, want: types.TierAdminRemote},
 
 		// git branch
 		{name: "git branch (list)", args: []string{"git", "branch"}, want: types.TierReadLocal},
@@ -91,8 +96,8 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git stash push", args: []string{"git", "stash", "push"}, want: types.TierWriteLocal},
 		{name: "git stash pop", args: []string{"git", "stash", "pop"}, want: types.TierWriteLocal},
 		{name: "git stash apply", args: []string{"git", "stash", "apply"}, want: types.TierWriteLocal},
-		{name: "git stash drop", args: []string{"git", "stash", "drop"}, want: types.TierWriteLocal},
-		{name: "git stash clear", args: []string{"git", "stash", "clear"}, want: types.TierWriteLocal},
+		{name: "git stash drop", args: []string{"git", "stash", "drop"}, want: types.TierAdminLocal},
+		{name: "git stash clear", args: []string{"git", "stash", "clear"}, want: types.TierAdminLocal},
 		{name: "git stash list", args: []string{"git", "stash", "list"}, want: types.TierReadLocal},
 		{name: "git stash show", args: []string{"git", "stash", "show"}, want: types.TierReadLocal},
 
@@ -113,6 +118,8 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git clean -f (force)", args: []string{"git", "clean", "-f"}, want: types.TierAdminLocal},
 		{name: "git clean -fd", args: []string{"git", "clean", "-fd"}, want: types.TierAdminLocal},
 		{name: "git clean -fx", args: []string{"git", "clean", "-fx"}, want: types.TierAdminLocal},
+		{name: "git clean -nd (combined dry-run)", args: []string{"git", "clean", "-nd"}, want: types.TierReadLocal},
+		{name: "git clean -nfd (combined dry-run)", args: []string{"git", "clean", "-nfd"}, want: types.TierReadLocal},
 
 		// git config
 		{name: "git config --list", args: []string{"git", "config", "--list"}, want: types.TierReadLocal},

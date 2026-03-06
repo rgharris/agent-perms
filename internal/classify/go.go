@@ -45,7 +45,7 @@ var goSimpleTiers = map[string]types.Tier{
 	"vet":     types.TierReadLocal,
 	"test":    types.TierWriteLocal,
 	"bug":     types.TierReadLocal, // opens browser with bug report template
-	"tool":    types.TierReadLocal, // runs bundled go tools (vet, pprof, trace, etc.)
+	"tool":    types.TierWriteLocal, // runs Go tools; Go 1.24+ supports user-defined tools via go.mod
 
 	// Write: produce artifacts, modify source, or mutate the module graph.
 	"run":       types.TierWriteLocal,

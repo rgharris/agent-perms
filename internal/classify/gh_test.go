@@ -38,6 +38,7 @@ func TestClassifyGHAPI(t *testing.T) {
 		{name: "-f field → implicit POST → write", args: []string{"/repos/owner/repo/issues", "-f", "title=Bug"}, want: types.TierWriteRemote},
 		{name: "-F field → implicit POST → write", args: []string{"/repos/owner/repo/issues", "-F", "assignees[]=octocat"}, want: types.TierWriteRemote},
 		{name: "-f= form → implicit POST → write", args: []string{"/repos/owner/repo", "-f=key=value"}, want: types.TierWriteRemote},
+		{name: "--input → implicit POST → write", args: []string{"/repos/owner/repo/issues", "--input", "body.json"}, want: types.TierWriteRemote},
 
 		// GraphQL queries (read)
 		{name: "graphql query → read", args: []string{"graphql", "-f", "query=query { viewer { login } }"}, want: types.TierReadRemote},

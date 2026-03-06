@@ -18,6 +18,7 @@ func TestClassifyGo(t *testing.T) {
 		{name: "go list", args: []string{"go", "list", "./..."}, want: types.TierReadLocal},
 		{name: "go doc", args: []string{"go", "doc", "fmt.Println"}, want: types.TierReadLocal},
 		{name: "go vet", args: []string{"go", "vet", "./..."}, want: types.TierReadLocal},
+		{name: "go tool", args: []string{"go", "tool", "pprof"}, want: types.TierWriteLocal},
 		{name: "go test", args: []string{"go", "test", "./..."}, want: types.TierWriteLocal},
 		{name: "go test (flags)", args: []string{"go", "test", "-v", "-run", "TestFoo", "./..."}, want: types.TierWriteLocal},
 

@@ -106,6 +106,133 @@ var ghTiers = map[string]types.Tier{
 	"variable set":   types.TierWriteRemote,
 	"variable delete": types.TierAdminRemote, // irreversible; can break CI/CD pipelines
 
+	// Labels
+	"label list":   types.TierReadRemote,
+	"label create": types.TierWriteRemote,
+	"label edit":   types.TierWriteRemote,
+	"label clone":  types.TierWriteRemote,
+	"label delete": types.TierAdminRemote, // irreversible
+
+	// Gists
+	"gist list":   types.TierReadRemote,
+	"gist view":   types.TierReadRemote,
+	"gist clone":  types.TierReadRemote,
+	"gist create": types.TierWriteRemote,
+	"gist edit":   types.TierWriteRemote,
+	"gist rename": types.TierWriteRemote,
+	"gist delete": types.TierAdminRemote, // irreversible
+
+	// Projects (GitHub Projects v2)
+	"project list":         types.TierReadRemote,
+	"project view":         types.TierReadRemote,
+	"project field-list":   types.TierReadRemote,
+	"project item-list":    types.TierReadRemote,
+	"project create":       types.TierWriteRemote,
+	"project edit":         types.TierWriteRemote,
+	"project copy":         types.TierWriteRemote,
+	"project close":        types.TierWriteRemote,
+	"project link":         types.TierWriteRemote,
+	"project unlink":       types.TierWriteRemote,
+	"project mark-template": types.TierWriteRemote,
+	"project field-create": types.TierWriteRemote,
+	"project item-add":     types.TierWriteRemote,
+	"project item-create":  types.TierWriteRemote,
+	"project item-edit":    types.TierWriteRemote,
+	"project item-archive": types.TierWriteRemote,
+	"project field-delete": types.TierAdminRemote, // irreversible
+	"project item-delete":  types.TierAdminRemote, // irreversible
+	"project delete":       types.TierAdminRemote, // irreversible
+
+	// Rulesets
+	"ruleset list":  types.TierReadRemote,
+	"ruleset view":  types.TierReadRemote,
+	"ruleset check": types.TierReadRemote,
+
+	// Cache (GitHub Actions caches)
+	"cache list":   types.TierReadRemote,
+	"cache delete": types.TierAdminRemote, // irreversible
+
+	// Codespaces
+	"codespace list":    types.TierReadRemote,
+	"codespace view":    types.TierReadRemote,
+	"codespace logs":    types.TierReadRemote,
+	"codespace ports":   types.TierReadRemote,
+	"codespace ssh":     types.TierWriteRemote,
+	"codespace code":    types.TierWriteRemote,
+	"codespace jupyter": types.TierWriteRemote,
+	"codespace cp":      types.TierWriteRemote,
+	"codespace create":  types.TierWriteRemote,
+	"codespace edit":    types.TierWriteRemote,
+	"codespace rebuild": types.TierWriteRemote,
+	"codespace stop":    types.TierWriteRemote,
+	"codespace delete":  types.TierAdminRemote, // irreversible
+
+	// Attestations
+	"attestation download":     types.TierReadRemote,
+	"attestation verify":       types.TierReadRemote,
+	"attestation trusted-root": types.TierReadRemote,
+
+	// Agent Tasks (preview)
+	"agent-task list":   types.TierReadRemote,
+	"agent-task view":   types.TierReadRemote,
+	"agent-task create": types.TierWriteRemote,
+
+	// Repo subresources (3-level: "repo autolink list" etc.)
+	"repo autolink list":     types.TierReadRemote,
+	"repo autolink view":     types.TierReadRemote,
+	"repo autolink create":   types.TierWriteRemote,
+	"repo autolink delete":   types.TierAdminRemote, // irreversible
+	"repo deploy-key list":   types.TierReadRemote,
+	"repo deploy-key add":    types.TierAdminRemote, // security-critical
+	"repo deploy-key delete": types.TierAdminRemote, // security-critical
+	"repo gitignore list":    types.TierReadRemote,
+	"repo gitignore view":    types.TierReadRemote,
+	"repo license list":      types.TierReadRemote,
+	"repo license view":      types.TierReadRemote,
+	"repo set-default":       types.TierWriteRemote,
+	"repo unarchive":         types.TierAdminRemote, // reverses archive, changes repo state
+
+	// Additional PR subcommands
+	"pr update-branch": types.TierWriteRemote,
+	"pr revert":        types.TierWriteRemote,
+
+	// Additional Issue subcommands
+	"issue develop": types.TierWriteRemote,
+	"issue unlock":  types.TierAdminRemote,
+
+	// Additional Release subcommands
+	"release delete-asset": types.TierAdminRemote, // irreversible
+	"release verify":       types.TierReadRemote,
+	"release verify-asset": types.TierReadRemote,
+
+	// Config
+	"config set":         types.TierWriteRemote,
+	"config clear-cache": types.TierWriteRemote,
+
+	// Alias management
+	"alias set":    types.TierWriteRemote,
+	"alias delete": types.TierWriteRemote,
+	"alias import": types.TierWriteRemote,
+
+	// Extension management
+	"extension browse":  types.TierReadRemote,
+	"extension search":  types.TierReadRemote,
+	"extension create":  types.TierWriteRemote,
+	"extension install": types.TierWriteRemote,
+	"extension upgrade": types.TierWriteRemote,
+	"extension exec":    types.TierWriteRemote,
+	"extension remove":  types.TierWriteRemote,
+
+	// Auth
+	"auth setup-git": types.TierWriteRemote,
+
+	// Codespace ports (3-level)
+	"codespace ports forward":    types.TierWriteRemote,
+	"codespace ports visibility": types.TierWriteRemote,
+
+	// Preview (debug/test commands)
+	"preview prompter": types.TierReadRemote,
+
 	// Search & Misc (all read remote — queries GitHub API)
 	"search code":    types.TierReadRemote,
 	"search commits": types.TierReadRemote,
@@ -114,6 +241,7 @@ var ghTiers = map[string]types.Tier{
 	"search repos":   types.TierReadRemote,
 	"status":         types.TierReadRemote,
 	"browse":         types.TierReadRemote,
+	"completion":     types.TierReadRemote,
 	"org list":       types.TierReadRemote,
 	"config list":    types.TierReadRemote,
 	"config get":     types.TierReadRemote,
@@ -136,7 +264,21 @@ func classifyGH(args []string) Result {
 		return classifyGHAPI(args[1:])
 	}
 
-	// Try two-token key first (e.g., "pr list", "issue create").
+	// Try three-token key first (e.g., "repo autolink list", "repo deploy-key add").
+	if len(args) >= 3 && !strings.HasPrefix(args[1], "-") && !strings.HasPrefix(args[2], "-") {
+		key := sub + " " + args[1] + " " + args[2]
+		if tier, ok := ghTiers[key]; ok {
+			return Result{
+				CLI:          "gh",
+				Subcommand:   key,
+				Tier:         tier,
+				BaseTier:     tier,
+				BaseTierNote: fmt.Sprintf("gh %s", key),
+			}
+		}
+	}
+
+	// Try two-token key (e.g., "pr list", "issue create", "repo set-default").
 	// Only combine if args[1] exists and is not a flag.
 	if len(args) >= 2 && !strings.HasPrefix(args[1], "-") {
 		key := sub + " " + args[1]

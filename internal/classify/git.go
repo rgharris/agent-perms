@@ -10,44 +10,153 @@ import (
 // gitSimpleTiers maps git subcommands with unambiguous tiers (flag-independent).
 var gitSimpleTiers = map[string]types.Tier{
 	// Read local — query local state, no working tree mutations
-	"status":    types.TierReadLocal,
-	"log":       types.TierReadLocal,
-	"diff":      types.TierReadLocal,
-	"show":      types.TierReadLocal,
-	"blame":     types.TierReadLocal,
-	"grep":      types.TierReadLocal,
-	"describe":  types.TierReadLocal,
-	"shortlog":  types.TierReadLocal,
-	"rev-parse": types.TierReadLocal,
-	"rev-list":  types.TierReadLocal,
-	"cat-file":  types.TierReadLocal,
-	"ls-tree":   types.TierReadLocal,
-	"ls-files":  types.TierReadLocal,
+	"status":        types.TierReadLocal,
+	"log":           types.TierReadLocal,
+	"diff":          types.TierReadLocal,
+	"show":          types.TierReadLocal,
+	"blame":         types.TierReadLocal,
+	"grep":          types.TierReadLocal,
+	"describe":      types.TierReadLocal,
+	"shortlog":      types.TierReadLocal,
+	"rev-parse":     types.TierReadLocal,
+	"rev-list":      types.TierReadLocal,
+	"cat-file":      types.TierReadLocal,
+	"ls-tree":       types.TierReadLocal,
+	"ls-files":      types.TierReadLocal,
+	"help":          types.TierReadLocal,
+	"version":       types.TierReadLocal,
+	"archive":       types.TierReadLocal,
+	"range-diff":    types.TierReadLocal,
+	"format-patch":  types.TierReadLocal,
+	"annotate":      types.TierReadLocal,
+	"bugreport":     types.TierReadLocal,
+	"count-objects": types.TierReadLocal,
+	"diagnose":      types.TierReadLocal,
+	"difftool":      types.TierReadLocal,
+	"fsck":          types.TierReadLocal,
+	"merge-tree":    types.TierReadLocal,
+	"show-branch":   types.TierReadLocal,
+	"verify-commit": types.TierReadLocal,
+	"verify-tag":    types.TierReadLocal,
+	"whatchanged":   types.TierReadLocal,
+	"show-ref":      types.TierReadLocal,
+	"for-each-ref":  types.TierReadLocal,
+	"merge-base":    types.TierReadLocal,
+	"name-rev":      types.TierReadLocal,
+	"cherry":        types.TierReadLocal,
+	"diff-files":    types.TierReadLocal,
+	"diff-index":    types.TierReadLocal,
+	"diff-tree":     types.TierReadLocal,
+	"hash-object":   types.TierReadLocal,
+	"var":           types.TierReadLocal,
+	"check-attr":      types.TierReadLocal,
+	"check-ignore":    types.TierReadLocal,
+	"check-mailmap":   types.TierReadLocal,
+	"check-ref-format": types.TierReadLocal,
+	"column":          types.TierReadLocal,
+	"get-tar-commit-id": types.TierReadLocal,
+	"patch-id":        types.TierReadLocal,
+	"show-index":      types.TierReadLocal,
+	"verify-pack":     types.TierReadLocal,
+	"stripspace":      types.TierReadLocal,
+	"diff-pairs":      types.TierReadLocal,
+	"refs":            types.TierReadLocal,
+	"pack-redundant":  types.TierReadLocal,
+	"unpack-file":     types.TierReadLocal,
+	"fmt-merge-msg":   types.TierReadLocal,
 
 	// Read remote — contacts a remote server to download objects
-	"fetch": types.TierReadRemote,
+	"fetch":      types.TierReadRemote,
+	"ls-remote":  types.TierReadRemote,
+	"fetch-pack": types.TierReadRemote,
 
-	// WriteLocal - create or modify local state
-	"add":         types.TierWriteLocal,
-	"commit":      types.TierWriteLocal,
-	"rm":          types.TierWriteLocal,
-	"mv":          types.TierWriteLocal,
-	"merge":       types.TierWriteLocal,
-	"rebase":      types.TierWriteLocal,
-	"cherry-pick": types.TierWriteLocal,
-	"apply":       types.TierWriteLocal,
-	"am":          types.TierWriteLocal,
-	"revert":      types.TierWriteLocal,
-	"init":        types.TierWriteLocal,
-	"clone":       types.TierWriteLocal,
-	"pull":        types.TierWriteLocal, // fetch + merge into local branch
-	"checkout":    types.TierWriteLocal, // branch switch or file restore
-	"switch":      types.TierWriteLocal,
-	"restore":     types.TierWriteLocal,
+	// Write local — create or modify local state
+	"add":                  types.TierWriteLocal,
+	"commit":               types.TierWriteLocal,
+	"rm":                   types.TierWriteLocal,
+	"mv":                   types.TierWriteLocal,
+	"merge":                types.TierWriteLocal,
+	"rebase":               types.TierWriteLocal,
+	"cherry-pick":          types.TierWriteLocal,
+	"apply":                types.TierWriteLocal,
+	"am":                   types.TierWriteLocal,
+	"revert":               types.TierWriteLocal,
+	"init":                 types.TierWriteLocal,
+	"clone":                types.TierWriteLocal,
+	"pull":                 types.TierWriteLocal, // fetch + merge into local branch
+	"checkout":             types.TierWriteLocal, // branch switch or file restore
+	"switch":               types.TierWriteLocal,
+	"restore":              types.TierWriteLocal,
+	"bisect":               types.TierWriteLocal, // moves HEAD during binary search
+	"maintenance":          types.TierWriteLocal, // optimizes repo data
+	"sparse-checkout":      types.TierWriteLocal, // modifies working tree
+	"mergetool":            types.TierWriteLocal,
+	"rerere":               types.TierWriteLocal, // records/replays merge resolutions
+	"pack-refs":            types.TierWriteLocal,
+	"repack":               types.TierWriteLocal,
+	"update-index":         types.TierWriteLocal,
+	"update-ref":           types.TierWriteLocal,
+	"read-tree":            types.TierWriteLocal,
+	"checkout-index":       types.TierWriteLocal,
+	"symbolic-ref":         types.TierWriteLocal,
+	"interpret-trailers":   types.TierWriteLocal,
+	"commit-graph":         types.TierWriteLocal,
+	"multi-pack-index":     types.TierWriteLocal,
+	"scalar":               types.TierWriteLocal,
+	"bundle":               types.TierWriteLocal,  // creates bundle files
+	"fast-export":          types.TierWriteLocal,   // exports repo data
+	"fast-import":          types.TierWriteLocal,   // imports data into repo
+	"index-pack":           types.TierWriteLocal,
+	"pack-objects":         types.TierWriteLocal,
+	"unpack-objects":       types.TierWriteLocal,
+	"mktag":                types.TierWriteLocal,
+	"mktree":               types.TierWriteLocal,
+	"commit-tree":          types.TierWriteLocal,
+	"write-tree":           types.TierWriteLocal,
+	"merge-file":           types.TierWriteLocal,
+	"merge-index":          types.TierWriteLocal,
+	"merge-one-file":       types.TierWriteLocal,
+	"hook":                 types.TierWriteLocal,   // runs git hooks
+	"replay":               types.TierWriteLocal,
+	"update-server-info":   types.TierWriteLocal,
+	"send-pack":            types.TierWriteRemote,  // pushes objects over git protocol
+	"send-email":           types.TierWriteRemote,
+	"imap-send":            types.TierWriteRemote,
+	"request-pull":         types.TierWriteLocal,   // generates pull request summary text
+	"backfill":             types.TierWriteLocal,   // downloads missing objects in partial clone
+	"credential":           types.TierWriteLocal,
+	"credential-cache":     types.TierWriteLocal,
+	"credential-store":     types.TierWriteLocal,
+	"mailinfo":             types.TierReadLocal,
+	"mailsplit":            types.TierReadLocal,
+	"for-each-repo":        types.TierWriteLocal,   // runs commands across repos
+	"prune-packed":         types.TierWriteLocal,
 
-	// AdminLocal - destructive local ops; data loss risk
+	// GUI / browser (read local — opens a UI but doesn't modify state)
+	"gui":      types.TierReadLocal,
+	"gitk":     types.TierReadLocal,
+	"citool":   types.TierWriteLocal, // graphical commit tool
+	"gitweb":   types.TierReadLocal,
+	"instaweb": types.TierReadLocal,
+
+	// Interop with other VCS
+	"svn":             types.TierWriteLocal,
+	"p4":              types.TierWriteLocal,
+	"archimport":      types.TierWriteLocal,
+	"cvsimport":       types.TierWriteLocal,
+	"cvsexportcommit": types.TierWriteRemote,
+	"cvsserver":       types.TierReadLocal,  // serves repo via CVS protocol
+	"quiltimport":     types.TierWriteLocal,
+	"daemon":          types.TierWriteLocal, // serves repo over git protocol
+
+	// Misc low-level
+	"http-backend": types.TierReadLocal, // CGI handler for git over HTTP
+
+	// Admin local — destructive local ops; data loss risk
 	"gc":            types.TierAdminLocal, // garbage collection; can delete loose objects
 	"filter-branch": types.TierAdminLocal, // rewrites history; destructive
+	"prune":         types.TierAdminLocal, // deletes unreachable objects
+	"replace":       types.TierAdminLocal, // replaces object refs; confusing if misused
 }
 
 // classifyGit classifies a git command given args after "git".
@@ -83,6 +192,14 @@ func classifyGit(args []string) Result {
 		return classifyGitConfig(rest)
 	case "reset":
 		return classifyGitReset(rest)
+	case "notes":
+		return classifyGitNotes(rest)
+	case "submodule":
+		return classifyGitSubmodule(rest)
+	case "worktree":
+		return classifyGitWorktree(rest)
+	case "reflog":
+		return classifyGitReflog(rest)
 	}
 
 	if tier, ok := gitSimpleTiers[sub]; ok {
@@ -393,5 +510,113 @@ func classifyGitReset(args []string) Result {
 		Tier:         types.TierWriteLocal,
 		BaseTier:     types.TierWriteLocal,
 		BaseTierNote: "git reset (soft/mixed by default)",
+	}
+}
+
+// classifyGitNotes classifies "git notes" based on sub-subcommand.
+//   - list, show → read local
+//   - add, append, copy, edit, merge, remove, prune → write local
+//   - no sub-subcommand defaults to list → read local
+func classifyGitNotes(args []string) Result {
+	readSubs := map[string]bool{"list": true, "show": true}
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			tier := types.TierWriteLocal
+			if readSubs[arg] {
+				tier = types.TierReadLocal
+			}
+			return Result{
+				CLI: "git", Subcommand: "notes",
+				Tier: tier, BaseTier: tier,
+				BaseTierNote: fmt.Sprintf("git notes %s", arg),
+			}
+		}
+	}
+	return Result{
+		CLI: "git", Subcommand: "notes",
+		Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+		BaseTierNote: "git notes (list by default)",
+	}
+}
+
+// classifyGitSubmodule classifies "git submodule" based on sub-subcommand.
+//   - status, summary, foreach → read local
+//   - add, init, update, deinit, sync, absorbgitdirs, set-branch, set-url → write local
+//   - no sub-subcommand defaults to status → read local
+func classifyGitSubmodule(args []string) Result {
+	readSubs := map[string]bool{"status": true, "summary": true, "foreach": true}
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			tier := types.TierWriteLocal
+			if readSubs[arg] {
+				tier = types.TierReadLocal
+			}
+			return Result{
+				CLI: "git", Subcommand: "submodule",
+				Tier: tier, BaseTier: tier,
+				BaseTierNote: fmt.Sprintf("git submodule %s", arg),
+			}
+		}
+	}
+	return Result{
+		CLI: "git", Subcommand: "submodule",
+		Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+		BaseTierNote: "git submodule (status by default)",
+	}
+}
+
+// classifyGitWorktree classifies "git worktree" based on sub-subcommand.
+//   - list → read local
+//   - add, move, lock, unlock, repair → write local
+//   - remove, prune → admin local (deletes worktree data)
+//   - no sub-subcommand → unknown
+func classifyGitWorktree(args []string) Result {
+	adminSubs := map[string]bool{"remove": true, "prune": true}
+	readSubs := map[string]bool{"list": true}
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			tier := types.TierWriteLocal
+			if readSubs[arg] {
+				tier = types.TierReadLocal
+			} else if adminSubs[arg] {
+				tier = types.TierAdminLocal
+			}
+			return Result{
+				CLI: "git", Subcommand: "worktree",
+				Tier: tier, BaseTier: tier,
+				BaseTierNote: fmt.Sprintf("git worktree %s", arg),
+			}
+		}
+	}
+	return Result{
+		CLI: "git", Subcommand: "worktree",
+		Tier: types.TierUnknown, BaseTier: types.TierUnknown,
+		BaseTierNote: "git worktree: no sub-subcommand provided",
+		Unknown: true,
+	}
+}
+
+// classifyGitReflog classifies "git reflog" based on sub-subcommand.
+//   - show (default) → read local
+//   - expire, delete → admin local (permanently removes reflog entries)
+func classifyGitReflog(args []string) Result {
+	adminSubs := map[string]bool{"expire": true, "delete": true}
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			tier := types.TierReadLocal
+			if adminSubs[arg] {
+				tier = types.TierAdminLocal
+			}
+			return Result{
+				CLI: "git", Subcommand: "reflog",
+				Tier: tier, BaseTier: tier,
+				BaseTierNote: fmt.Sprintf("git reflog %s", arg),
+			}
+		}
+	}
+	return Result{
+		CLI: "git", Subcommand: "reflog",
+		Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+		BaseTierNote: "git reflog (show by default)",
 	}
 }

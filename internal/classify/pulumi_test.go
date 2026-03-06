@@ -63,7 +63,7 @@ func TestClassifyPulumi(t *testing.T) {
 		{name: "pulumi stack init", args: []string{"pulumi", "stack", "init", "dev"}, want: types.TierWriteLocal},
 		{name: "pulumi stack select", args: []string{"pulumi", "stack", "select", "prod"}, want: types.TierWriteLocal},
 		{name: "pulumi stack rename", args: []string{"pulumi", "stack", "rename", "new-name"}, want: types.TierWriteLocal},
-		{name: "pulumi stack tag", args: []string{"pulumi", "stack", "tag", "set", "env", "prod"}, want: types.TierWriteLocal},
+		{name: "pulumi stack tag set", args: []string{"pulumi", "stack", "tag", "set", "env", "prod"}, want: types.TierWriteRemote},
 		{name: "pulumi stack change-secrets-provider", args: []string{"pulumi", "stack", "change-secrets-provider", "awskms://..."}, want: types.TierWriteLocal},
 
 		// WriteLocal — plugin install

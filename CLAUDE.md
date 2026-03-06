@@ -11,6 +11,22 @@ When you add a new CLI classifier (a new `internal/classify/<cli>.go` file), upd
 5. **`examples/claude-settings.md`** — add example profiles for the new CLI
 6. **`docs/new-clis-to-add.md`** — remove the CLI from the candidates list if it was listed there
 
+## Auditing an Existing CLI Classifier
+
+When updating a classifier to add missing subcommands, follow this process:
+
+1. **Capture the full command reference** — Run the CLI's help command to get every subcommand:
+   - `gh help reference` (or `gh help -a`)
+   - `git help -a`
+   - `go help` + `go help mod` / `go help work` for sub-groups
+   - `pulumi --help` + `pulumi <group> --help` for each subcommand group
+2. **Extract all subcommand paths** — List every valid `<group> <sub>` combination from the help output
+3. **Diff against the classifier** — Compare against the keys in the `*Tiers` map and any special-case `switch` handlers in `internal/classify/<cli>.go`
+4. **Classify each gap** — Determine the correct tier (read/write/admin × local/remote) for each missing subcommand
+5. **Check key depth** — Verify the classifier function supports the required key depth (e.g., `gh` supports 3-token keys like `repo autolink list`)
+6. **Build, test, install** — `go build ./...`, `go test ./...`, `go install ./cmd/agent-perms`
+7. **Verify with explain** — Run `agent-perms explain <cli> <subcommand>` for new entries
+
 ## Commit Practices
 
 ### During Development

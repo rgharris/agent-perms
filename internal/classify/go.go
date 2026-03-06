@@ -45,13 +45,17 @@ var goSimpleTiers = map[string]types.Tier{
 	"doc":     types.TierReadLocal,
 	"vet":     types.TierReadLocal,
 	"test":    types.TierReadLocal,
+	"bug":     types.TierReadLocal, // opens browser with bug report template
+	"tool":    types.TierReadLocal, // runs bundled go tools (vet, pprof, trace, etc.)
 
 	// Write: produce artifacts, modify source, or mutate the module graph.
-	"run":      types.TierWriteLocal,
-	"fmt":      types.TierWriteLocal,
-	"generate": types.TierWriteLocal,
-	"install":  types.TierWriteLocal,
-	"get":      types.TierWriteLocal,
+	"run":       types.TierWriteLocal,
+	"fmt":       types.TierWriteLocal,
+	"generate":  types.TierWriteLocal,
+	"install":   types.TierWriteLocal,
+	"get":       types.TierWriteLocal,
+	"fix":       types.TierWriteLocal, // rewrites source to use new APIs
+	"telemetry": types.TierWriteLocal, // manages telemetry settings
 }
 
 // classifyGo classifies a go command given args after "go".
@@ -228,7 +232,7 @@ func classifyGoWork(args []string) Result {
 			continue
 		}
 		switch arg {
-		case "init", "use", "edit", "sync":
+		case "init", "use", "edit", "sync", "vendor":
 			return Result{
 				CLI:          "go",
 				Subcommand:   "work " + arg,

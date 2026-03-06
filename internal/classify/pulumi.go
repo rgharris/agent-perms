@@ -25,10 +25,12 @@ var pulumiTiers = map[string]types.Tier{
 	"stack output":                  types.TierReadRemote,
 	"stack history":                 types.TierReadRemote,
 	"stack graph":                   types.TierReadRemote,
+	"stack export":                  types.TierReadRemote,
 	"stack init":                    types.TierWriteLocal,
 	"stack select":                  types.TierWriteLocal,
+	"stack unselect":                types.TierWriteLocal,
 	"stack rename":                  types.TierWriteLocal,
-	"stack tag":                     types.TierWriteLocal, // modifies stack metadata
+	"stack import":                  types.TierWriteLocal,
 	"stack change-secrets-provider": types.TierWriteLocal,
 	"stack rm":                      types.TierAdminLocal, // removes stack; irreversible
 	"stack remove":                  types.TierAdminLocal,
@@ -37,11 +39,12 @@ var pulumiTiers = map[string]types.Tier{
 	"config":         types.TierReadLocal,
 	"config get":     types.TierReadLocal,
 	"config set":     types.TierWriteLocal,
+	"config set-all": types.TierWriteLocal,
 	"config rm":      types.TierWriteLocal,
+	"config rm-all":  types.TierWriteLocal,
 	"config remove":  types.TierWriteLocal,
 	"config cp":      types.TierWriteLocal,
 	"config refresh": types.TierWriteLocal,
-	"config env":     types.TierWriteLocal,
 
 	// state
 	"state export":    types.TierReadRemote,  // exports state from backend (typically Pulumi Cloud)
@@ -50,6 +53,10 @@ var pulumiTiers = map[string]types.Tier{
 	"state rename":    types.TierWriteLocal,
 	"state protect":   types.TierWriteLocal,
 	"state unprotect": types.TierWriteLocal,
+	"state taint":     types.TierWriteLocal,
+	"state untaint":   types.TierWriteLocal,
+	"state repair":    types.TierWriteLocal,
+	"state upgrade":   types.TierWriteLocal,
 	"state delete":    types.TierAdminLocal, // removes resource from state; causes drift
 	"state edit":      types.TierAdminLocal, // raw edit of state blob; highly destructive
 
@@ -62,12 +69,44 @@ var pulumiTiers = map[string]types.Tier{
 	"plugin rm":      types.TierWriteLocal,
 	"plugin remove":  types.TierWriteLocal,
 
-	// schema / package (read-only info commands)
-	"schema":             types.TierReadLocal,
-	"schema get":         types.TierReadLocal,
-	"package":            types.TierReadLocal,
-	"package get-schema": types.TierReadLocal,
-	"package add":        types.TierWriteLocal, // installs a package dependency locally
+	// schema
+	"schema":       types.TierReadLocal,
+	"schema check": types.TierReadLocal,
+	"schema get":   types.TierReadLocal,
+
+	// package
+	"package":             types.TierReadLocal,
+	"package get-schema":  types.TierReadLocal,
+	"package get-mapping": types.TierReadLocal,
+	"package info":        types.TierReadLocal,
+	"package add":         types.TierWriteLocal, // installs a package dependency locally
+	"package gen-sdk":     types.TierWriteLocal, // generates SDK code locally
+	"package publish":     types.TierWriteRemote, // publishes to registry
+	"package delete":      types.TierAdminRemote, // deletes from registry; irreversible
+
+	// template
+	"template publish": types.TierWriteRemote, // publishes to registry
+
+	// org
+	"org":             types.TierReadRemote,
+	"org get-default": types.TierReadLocal,
+	"org set-default": types.TierWriteLocal,
+	"org search":      types.TierReadRemote,
+
+	// project
+	"project":    types.TierReadRemote,
+	"project ls": types.TierReadRemote,
+
+	// policy
+	"policy ls":              types.TierReadRemote,
+	"policy list":            types.TierReadRemote,
+	"policy validate-config": types.TierReadLocal,
+	"policy new":             types.TierWriteLocal,  // creates local policy pack
+	"policy publish":         types.TierWriteRemote, // publishes to Pulumi Cloud
+	"policy enable":          types.TierWriteRemote,
+	"policy disable":         types.TierWriteRemote,
+	"policy rm":              types.TierAdminRemote, // removes policy pack; irreversible
+	"policy remove":          types.TierAdminRemote,
 
 	// auth — modifies local credentials file
 	"login":  types.TierWriteLocal,
@@ -79,9 +118,18 @@ var pulumiTiers = map[string]types.Tier{
 	// import: adds an existing cloud resource to local state; no infra change
 	"import": types.TierWriteLocal,
 
+	// install: installs packages and plugins locally
+	"install": types.TierWriteLocal,
+
 	// refresh: reconciles local state with actual cloud state; no infra change
-	// Analogous to "git fetch": downloads remote facts but modifies only local state.
 	"refresh": types.TierWriteLocal,
+
+	// convert: converts programs between languages (local only)
+	"convert": types.TierWriteLocal,
+
+	// misc read
+	"console":        types.TierReadRemote, // opens stack in Pulumi Console
+	"gen-completion": types.TierReadLocal,
 
 	// Remote write — deploy changes to cloud infrastructure
 	"up":     types.TierWriteRemote,
@@ -111,6 +159,18 @@ func classifyPulumi(args []string) Result {
 	// env/esc (Pulumi ESC) has a 3–4 level command tree; use a dedicated handler.
 	if sub == "env" || sub == "esc" {
 		return classifyPulumiEnv(rest)
+	}
+
+	// stack tag and config env have sub-subcommands; use dedicated handlers.
+	if sub == "stack" && len(rest) > 0 && rest[0] == "tag" {
+		return classifyPulumiStackTag(rest[1:])
+	}
+	if sub == "config" && len(rest) > 0 && rest[0] == "env" {
+		return classifyPulumiConfigEnv(rest[1:])
+	}
+	// policy group has a sub-subcommand
+	if sub == "policy" && len(rest) > 0 && rest[0] == "group" {
+		return classifyPulumiPolicyGroup(rest[1:])
 	}
 
 	// Try two-token key first (e.g., "stack init", "config set").
@@ -279,6 +339,64 @@ func classifyPulumiEnvVersionTag(args []string) Result {
 	return Result{CLI: "pulumi", Subcommand: "env version tag",
 		Tier: types.TierWriteRemote, BaseTier: types.TierWriteRemote,
 		BaseTierNote: "pulumi env version tag (creates/sets a named version tag)"}
+}
+
+// classifyPulumiStackTag classifies "pulumi stack tag" commands.
+// Subcommands: get, ls (read); set, rm (write).
+func classifyPulumiStackTag(args []string) Result {
+	sub, _ := pulumiFirstPositional(args)
+
+	switch sub {
+	case "get", "ls", "list":
+		return Result{CLI: "pulumi", Subcommand: "stack tag " + sub,
+			Tier: types.TierReadRemote, BaseTier: types.TierReadRemote,
+			BaseTierNote: fmt.Sprintf("pulumi stack tag %s", sub)}
+	case "set", "rm", "remove":
+		return Result{CLI: "pulumi", Subcommand: "stack tag " + sub,
+			Tier: types.TierWriteRemote, BaseTier: types.TierWriteRemote,
+			BaseTierNote: fmt.Sprintf("pulumi stack tag %s", sub)}
+	}
+
+	return Result{CLI: "pulumi", Subcommand: "stack tag",
+		Tier: types.TierWriteRemote, BaseTier: types.TierWriteRemote,
+		BaseTierNote: "pulumi stack tag (sets a tag by default)"}
+}
+
+// classifyPulumiConfigEnv classifies "pulumi config env" commands.
+// Subcommands: ls (read); add, init, rm (write).
+func classifyPulumiConfigEnv(args []string) Result {
+	sub, _ := pulumiFirstPositional(args)
+
+	switch sub {
+	case "ls", "list":
+		return Result{CLI: "pulumi", Subcommand: "config env " + sub,
+			Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+			BaseTierNote: fmt.Sprintf("pulumi config env %s", sub)}
+	case "add", "init", "rm", "remove":
+		return Result{CLI: "pulumi", Subcommand: "config env " + sub,
+			Tier: types.TierWriteLocal, BaseTier: types.TierWriteLocal,
+			BaseTierNote: fmt.Sprintf("pulumi config env %s", sub)}
+	}
+
+	return Result{CLI: "pulumi", Subcommand: "config env",
+		Tier: types.TierWriteLocal, BaseTier: types.TierWriteLocal,
+		BaseTierNote: "pulumi config env (manages stack ESC environments)"}
+}
+
+// classifyPulumiPolicyGroup classifies "pulumi policy group" commands.
+func classifyPulumiPolicyGroup(args []string) Result {
+	sub, _ := pulumiFirstPositional(args)
+
+	switch sub {
+	case "ls", "list":
+		return Result{CLI: "pulumi", Subcommand: "policy group " + sub,
+			Tier: types.TierReadRemote, BaseTier: types.TierReadRemote,
+			BaseTierNote: fmt.Sprintf("pulumi policy group %s", sub)}
+	}
+
+	return Result{CLI: "pulumi", Subcommand: "policy group",
+		Tier: types.TierReadRemote, BaseTier: types.TierReadRemote,
+		BaseTierNote: "pulumi policy group (list by default)"}
 }
 
 // pulumiFirstPositional returns the first non-flag token and the remaining args.

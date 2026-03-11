@@ -98,7 +98,7 @@ var gitSimpleTiers = map[string]types.Tier{
 	"update-ref":           types.TierWriteLocal,
 	"read-tree":            types.TierWriteLocal,
 	"checkout-index":       types.TierWriteLocal,
-	"symbolic-ref":         types.TierWriteLocal,
+	// symbolic-ref: handled by classifyGitSymbolicRef (read vs write depends on arg count)
 	"interpret-trailers":   types.TierWriteLocal,
 	"commit-graph":         types.TierWriteLocal,
 	"multi-pack-index":     types.TierWriteLocal,
@@ -200,6 +200,8 @@ func classifyGit(args []string) Result {
 		return classifyGitWorktree(rest)
 	case "reflog":
 		return classifyGitReflog(rest)
+	case "symbolic-ref":
+		return classifyGitSymbolicRef(rest)
 	}
 
 	if tier, ok := gitSimpleTiers[sub]; ok {
@@ -665,4 +667,39 @@ func classifyGitReflog(args []string) Result {
 		Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
 		BaseTierNote: "git reflog (show by default)",
 	}
+}
+
+// classifyGitSymbolicRef classifies "git symbolic-ref" based on argument count.
+//   - 1 positional arg (the ref name) → read local (prints the target)
+//   - 2 positional args (ref + target) → write local (sets the ref)
+//   - --delete / -d → write local (removes the symbolic ref)
+//   - --short → read local (display flag only)
+func classifyGitSymbolicRef(args []string) Result {
+	base := Result{
+		CLI:          "git",
+		Subcommand:   "symbolic-ref",
+		BaseTier:     types.TierReadLocal,
+		BaseTierNote: "git symbolic-ref (read by default)",
+	}
+
+	positionals := 0
+	for _, arg := range args {
+		if arg == "--delete" || arg == "-d" {
+			base.Tier = types.TierWriteLocal
+			base.FlagEffects = []string{fmt.Sprintf("%s → removes symbolic ref → write local", arg)}
+			return base
+		}
+		if !strings.HasPrefix(arg, "-") {
+			positionals++
+		}
+	}
+
+	if positionals >= 2 {
+		base.Tier = types.TierWriteLocal
+		base.FlagEffects = []string{"two positional args → sets ref target → write local"}
+		return base
+	}
+
+	base.Tier = types.TierReadLocal
+	return base
 }

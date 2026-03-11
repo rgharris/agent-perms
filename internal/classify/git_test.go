@@ -145,6 +145,13 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git submodule foreach", args: []string{"git", "submodule", "foreach", "echo", "hi"}, want: types.TierAdminLocal},
 		{name: "git submodule update", args: []string{"git", "submodule", "update", "--init"}, want: types.TierWriteLocal},
 
+		// git symbolic-ref
+		{name: "git symbolic-ref (read)", args: []string{"git", "symbolic-ref", "refs/remotes/origin/HEAD"}, want: types.TierReadLocal},
+		{name: "git symbolic-ref --short (read)", args: []string{"git", "symbolic-ref", "--short", "HEAD"}, want: types.TierReadLocal},
+		{name: "git symbolic-ref (set)", args: []string{"git", "symbolic-ref", "HEAD", "refs/heads/main"}, want: types.TierWriteLocal},
+		{name: "git symbolic-ref --delete", args: []string{"git", "symbolic-ref", "--delete", "refs/remotes/origin/HEAD"}, want: types.TierWriteLocal},
+		{name: "git symbolic-ref -d", args: []string{"git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD"}, want: types.TierWriteLocal},
+
 		// Global flags before subcommand
 		{name: "git -C dir status", args: []string{"git", "-C", "/tmp/repo", "status"}, want: types.TierReadLocal},
 		{name: "git --no-pager log", args: []string{"git", "--no-pager", "log"}, want: types.TierReadLocal},

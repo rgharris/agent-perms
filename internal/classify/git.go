@@ -313,6 +313,7 @@ func classifyGitPush(args []string) Result {
 
 // classifyGitBranch classifies "git branch" based on flags and positional args.
 //   - Listing (no mutation flags, no branch-name arg) → read local
+//   - Explicit list/query flags (--list, --contains, --merged, etc.) → read local
 //   - Creating, deleting, renaming, or setting upstream → write local
 func classifyGitBranch(args []string) Result {
 	base := Result{
@@ -329,8 +330,20 @@ func classifyGitBranch(args []string) Result {
 		"-c": true, "-C": true, "--copy": true,
 		"-u": true, "--set-upstream-to": true,
 		"--unset-upstream": true,
+		"--edit-description": true,
 	}
 
+	// Flags that indicate a read/query operation. When present, any positional
+	// args are patterns or filter values, not branch names to create.
+	readModeFlags := map[string]bool{
+		"-l": true, "--list": true,
+		"--contains": true, "--no-contains": true,
+		"--merged": true, "--no-merged": true,
+		"--points-at": true,
+		"--show-current": true,
+	}
+
+	isReadMode := false
 	hasPositional := false
 	for _, arg := range args {
 		if mutatingFlags[arg] || strings.HasPrefix(arg, "--set-upstream-to=") {
@@ -338,9 +351,17 @@ func classifyGitBranch(args []string) Result {
 			base.FlagEffects = []string{fmt.Sprintf("%s → write local", arg)}
 			return base
 		}
+		if readModeFlags[arg] {
+			isReadMode = true
+		}
 		if !strings.HasPrefix(arg, "-") {
 			hasPositional = true
 		}
+	}
+
+	if isReadMode {
+		base.Tier = types.TierReadLocal
+		return base
 	}
 
 	if hasPositional {
@@ -355,6 +376,8 @@ func classifyGitBranch(args []string) Result {
 
 // classifyGitTag classifies "git tag" based on flags and positional args.
 //   - No args or -l/--list → read local
+//   - -v/--verify → read local (verifies tag signature)
+//   - Query filters (--contains, --merged, etc.) → read local
 //   - Creating or deleting a tag → write local
 func classifyGitTag(args []string) Result {
 	base := Result{
@@ -364,23 +387,47 @@ func classifyGitTag(args []string) Result {
 		BaseTierNote: "git tag (list by default)",
 	}
 
+	// Flags that indicate a read/query operation. When present, any positional
+	// args are patterns or filter values, not tag names to create.
+	readModeFlags := map[string]bool{
+		"-l": true, "--list": true,
+		"-v": true, "--verify": true,
+		"--contains": true, "--no-contains": true,
+		"--merged": true, "--no-merged": true,
+		"--points-at": true,
+	}
+
+	isReadMode := false
+	hasDelete := false
+	hasPositional := false
+
 	for _, arg := range args {
 		if arg == "-d" || arg == "--delete" {
-			base.Tier = types.TierWriteLocal
-			base.FlagEffects = []string{fmt.Sprintf("%s → write local", arg)}
-			return base
+			hasDelete = true
 		}
-		if arg == "-l" || arg == "--list" {
-			// Explicit list flag; remain read regardless of other args.
-			base.Tier = types.TierReadLocal
-			return base
+		if readModeFlags[arg] {
+			isReadMode = true
 		}
 		if !strings.HasPrefix(arg, "-") {
-			// Positional arg = tag name → creating a tag.
-			base.Tier = types.TierWriteLocal
-			base.FlagEffects = []string{"tag name argument → create → write local"}
-			return base
+			hasPositional = true
 		}
+	}
+
+	if hasDelete {
+		base.Tier = types.TierWriteLocal
+		base.FlagEffects = []string{"-d/--delete → write local"}
+		return base
+	}
+
+	if isReadMode {
+		base.Tier = types.TierReadLocal
+		return base
+	}
+
+	if hasPositional {
+		base.Tier = types.TierWriteLocal
+		base.FlagEffects = []string{"tag name argument → create → write local"}
+		return base
 	}
 
 	base.Tier = types.TierReadLocal

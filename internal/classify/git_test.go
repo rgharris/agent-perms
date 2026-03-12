@@ -81,6 +81,14 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git branch -u (set upstream)", args: []string{"git", "branch", "-u", "origin/main"}, want: types.TierWriteLocal},
 		{name: "git branch --set-upstream-to=", args: []string{"git", "branch", "--set-upstream-to=origin/main"}, want: types.TierWriteLocal},
 		{name: "git branch --unset-upstream", args: []string{"git", "branch", "--unset-upstream"}, want: types.TierWriteLocal},
+		{name: "git branch --list pattern", args: []string{"git", "branch", "--list", "feature/*"}, want: types.TierReadLocal},
+		{name: "git branch -l pattern", args: []string{"git", "branch", "-l", "feature/*"}, want: types.TierReadLocal},
+		{name: "git branch --contains", args: []string{"git", "branch", "--contains", "HEAD"}, want: types.TierReadLocal},
+		{name: "git branch --no-contains", args: []string{"git", "branch", "--no-contains", "HEAD"}, want: types.TierReadLocal},
+		{name: "git branch --merged", args: []string{"git", "branch", "--merged", "main"}, want: types.TierReadLocal},
+		{name: "git branch --no-merged", args: []string{"git", "branch", "--no-merged", "main"}, want: types.TierReadLocal},
+		{name: "git branch --points-at", args: []string{"git", "branch", "--points-at", "HEAD"}, want: types.TierReadLocal},
+		{name: "git branch --show-current", args: []string{"git", "branch", "--show-current"}, want: types.TierReadLocal},
 
 		// git tag
 		{name: "git tag (list)", args: []string{"git", "tag"}, want: types.TierReadLocal},
@@ -90,6 +98,11 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git tag -a (annotated)", args: []string{"git", "tag", "-a", "v1.0", "-m", "release"}, want: types.TierWriteLocal},
 		{name: "git tag -d (delete)", args: []string{"git", "tag", "-d", "v1.0"}, want: types.TierWriteLocal},
 		{name: "git tag --delete (delete)", args: []string{"git", "tag", "--delete", "v1.0"}, want: types.TierWriteLocal},
+		{name: "git tag -v (verify)", args: []string{"git", "tag", "-v", "v1.0"}, want: types.TierReadLocal},
+		{name: "git tag --verify", args: []string{"git", "tag", "--verify", "v1.0"}, want: types.TierReadLocal},
+		{name: "git tag --contains", args: []string{"git", "tag", "--contains", "HEAD"}, want: types.TierReadLocal},
+		{name: "git tag --merged", args: []string{"git", "tag", "--merged", "main"}, want: types.TierReadLocal},
+		{name: "git tag -l pattern", args: []string{"git", "tag", "-l", "v1.*"}, want: types.TierReadLocal},
 
 		// git stash
 		{name: "git stash (push)", args: []string{"git", "stash"}, want: types.TierWriteLocal},

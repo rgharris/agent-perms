@@ -247,7 +247,7 @@ you can adjust.
 
     agent-perms exec <action> <scope> -- <cli> <subcommand> [args...]
 
-You MUST wrap the following CLIs with agent-perms: gh, git, go, kubectl, pulumi.
+You MUST wrap the following CLIs with agent-perms: esc, gh, git, go, kubectl, pulumi.
 The user's permission rules will likely deny these commands when run directly.
 
 The claimed tier must exactly match what the command requires. There is no
@@ -276,6 +276,23 @@ Scopes: remote (all gh ops contact the GitHub API)
     agent-perms exec write remote -- gh pr create --title "fix" --body ""
     agent-perms exec write remote -- gh issue create --title "bug"
     agent-perms exec admin remote -- gh repo delete my-repo
+
+## esc (Pulumi ESC CLI)
+
+Actions: read, read-sensitive, write, admin
+Scopes: local, remote
+
+    agent-perms exec read remote -- esc env ls
+    agent-perms exec read-sensitive remote -- esc env open myorg/prod
+    agent-perms exec write remote -- esc env edit myorg/dev
+    agent-perms exec admin remote -- esc env rm myorg/old-env
+
+For "esc run", the tier is the maximum of esc run (read-sensitive remote,
+since secrets are injected) and the inner command's tier:
+
+    agent-perms exec read-sensitive remote -- esc run myorg/dev -- kubectl get pods
+    agent-perms exec write remote -- esc run myorg/dev -- kubectl apply -f manifest.yaml
+    agent-perms exec admin remote -- esc run myorg/dev -- kubectl delete pod my-pod
 
 ## git
 
@@ -370,6 +387,15 @@ func cmdExplain(args []string, opts agentexec.Options) int {
 			"sensitive":      result.Tier.Action == types.ActionReadSensitive,
 			"unknown":        result.Unknown,
 		}
+		if result.InnerResult != nil {
+			inner := map[string]any{
+				"cli":        result.InnerResult.CLI,
+				"subcommand": result.InnerResult.Subcommand,
+				"tier":       result.InnerResult.Tier.String(),
+				"unknown":    result.InnerResult.Unknown,
+			}
+			out["inner"] = inner
+		}
 		if !result.Unknown {
 			out["exec"] = tierExecString(result.Tier, strings.Join(args, " "))
 		}
@@ -388,6 +414,13 @@ func cmdExplain(args []string, opts agentexec.Options) int {
 		fmt.Printf(" (%s)", result.BaseTierNote)
 	}
 	fmt.Println()
+	if result.InnerResult != nil {
+		fmt.Printf("inner:      %s %s → %s", result.InnerResult.CLI, result.InnerResult.Subcommand, result.InnerResult.Tier)
+		if result.InnerResult.Unknown {
+			fmt.Print(" (unknown)")
+		}
+		fmt.Println()
+	}
 	if len(flagEffects) > 0 {
 		fmt.Printf("flags:      %s\n", strings.Join(flagEffects, ", "))
 	}

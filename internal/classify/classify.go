@@ -15,6 +15,7 @@ type Result struct {
 	BaseTier     types.Tier // tier from DB before any flag escalation
 	BaseTierNote string     // human-readable note on the base tier
 	FlagEffects  []string   // flag escalations applied (e.g., "--method DELETE → admin")
+	InnerResult  *Result    // nested inner command classification (e.g., esc run ... -- <inner>)
 	Unknown      bool       // true if the subcommand was not found in the classification DB
 }
 
@@ -34,7 +35,7 @@ func hasHelpFlag(args []string) bool {
 
 // SupportedCLIs returns the list of CLI names that agent-perms can classify.
 func SupportedCLIs() []string {
-	return []string{"gh", "git", "go", "kubectl", "pulumi"}
+	return []string{"esc", "gh", "git", "go", "kubectl", "pulumi"}
 }
 
 // Classify classifies a command specified as a slice of tokens.
@@ -51,6 +52,8 @@ func Classify(args []string) Result {
 
 	cli := args[0]
 	switch cli {
+	case "esc":
+		return classifyEsc(args[1:])
 	case "gh":
 		return classifyGH(args[1:])
 	case "git":

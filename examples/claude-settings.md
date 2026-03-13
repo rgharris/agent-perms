@@ -8,7 +8,7 @@
 > Run `agent-perms claude validate` to check your settings for common issues.
 
 These examples show how to configure Claude Code's `settings.json` to use
-agent-perms as a permission layer for `gh`, `git`, `kubectl`, `pulumi`, and other CLIs.
+agent-perms as a permission layer for `esc`, `gh`, `git`, `kubectl`, `pulumi`, and other CLIs.
 
 ---
 

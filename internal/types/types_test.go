@@ -157,3 +157,48 @@ func TestAllows(t *testing.T) {
 		}
 	}
 }
+
+func TestMax(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b Tier
+		want Tier
+	}{
+		// Higher action wins
+		{name: "read vs write", a: TierReadRemote, b: TierWriteRemote, want: TierWriteRemote},
+		{name: "read-sensitive vs write", a: TierReadSensitiveRemote, b: TierWriteRemote, want: TierWriteRemote},
+		{name: "read-sensitive vs admin", a: TierReadSensitiveRemote, b: TierAdminRemote, want: TierAdminRemote},
+		{name: "read vs read-sensitive", a: TierReadRemote, b: TierReadSensitiveRemote, want: TierReadSensitiveRemote},
+		{name: "write vs admin", a: TierWriteRemote, b: TierAdminRemote, want: TierAdminRemote},
+
+		// Equal action — wider scope wins
+		{name: "read local vs read remote", a: TierReadLocal, b: TierReadRemote, want: TierReadRemote},
+		{name: "write local vs write remote", a: TierWriteLocal, b: TierWriteRemote, want: TierWriteRemote},
+
+		// Same tier returns same tier
+		{name: "read remote vs read remote", a: TierReadRemote, b: TierReadRemote, want: TierReadRemote},
+		{name: "admin local vs admin local", a: TierAdminLocal, b: TierAdminLocal, want: TierAdminLocal},
+
+		// Unknown is treated as zero
+		{name: "unknown vs read", a: TierUnknown, b: TierReadRemote, want: TierReadRemote},
+		{name: "write vs unknown", a: TierWriteLocal, b: TierUnknown, want: TierWriteLocal},
+		{name: "unknown vs unknown", a: TierUnknown, b: TierUnknown, want: TierUnknown},
+
+		// Order shouldn't matter
+		{name: "admin vs read (reversed)", a: TierAdminRemote, b: TierReadRemote, want: TierAdminRemote},
+		{name: "write vs read-sensitive (reversed)", a: TierWriteRemote, b: TierReadSensitiveRemote, want: TierWriteRemote},
+
+		// Cross-scope: higher action still wins regardless of scope
+		{name: "read remote vs write local", a: TierReadRemote, b: TierWriteLocal, want: TierWriteLocal},
+		{name: "admin local vs read-sensitive remote", a: TierAdminLocal, b: TierReadSensitiveRemote, want: TierAdminLocal},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Max(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("Max(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}

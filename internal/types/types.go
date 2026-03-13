@@ -109,6 +109,30 @@ func (t Tier) String() string {
 	return s
 }
 
+// Max returns the tier with the higher risk level. Action is compared first
+// (read < read-sensitive < write < admin); on equal action, the wider scope
+// wins (local < remote). Unknown tiers are treated as zero — if either tier
+// is unknown, the other is returned.
+func Max(a, b Tier) Tier {
+	if a.Action == ActionUnknown {
+		return b
+	}
+	if b.Action == ActionUnknown {
+		return a
+	}
+	if a.Action > b.Action {
+		return a
+	}
+	if b.Action > a.Action {
+		return b
+	}
+	// Equal action — take wider scope.
+	if a.Scope > b.Scope {
+		return a
+	}
+	return b
+}
+
 // Allows reports whether a claimed tier matches the required tier.
 // Exact match only — every field must match. There is no hierarchy:
 // write does not imply read, admin does not imply write, and

@@ -318,6 +318,7 @@ func TestValidateClean(t *testing.T) {
 				"Bash(agent-perms exec read -- *)"
 			],
 			"deny": [
+				"Bash(esc *)",
 				"Bash(gh *)",
 				"Bash(git *)",
 				"Bash(go *)",

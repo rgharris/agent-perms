@@ -42,7 +42,7 @@ Not the main target:
 
 - Users running in fully bypassed/yolo modes who intentionally skip policy gates
 
-**Supported CLIs:** `gh` (GitHub CLI), `git`, `go`, `kubectl`, `pulumi`
+**Supported CLIs:** `esc` (Pulumi ESC), `gh` (GitHub CLI), `git`, `go`, `kubectl`, `pulumi`
 
 **Tier model:** Commands are classified across two dimensions:
 
@@ -274,7 +274,7 @@ See [`examples/codex-settings.md`](examples/codex-settings.md) for profile detai
 - **Shell wrappers and indirection** — an agent can call `/usr/bin/git` by full path, invoke `env git ...`, or use `command git ...` to bypass deny rules that match only `git`.
 - **Environment variable injection** — setting `GIT_SSH_COMMAND`, `GH_TOKEN`, or similar vars before a command can change what the command does in ways the classifier cannot see.
 - **Git hooks and aliases** — `.git/config` aliases or hook scripts can execute arbitrary code triggered by otherwise-safe commands.
-- **Unsupported CLIs** — only `gh`, `git`, `go`, `kubectl`, and `pulumi` are classified. Other CLIs pass through unclassified and must be handled by platform-level rules.
+- **Unsupported CLIs** — only `esc`, `gh`, `git`, `go`, `kubectl`, and `pulumi` are classified. Other CLIs pass through unclassified and must be handled by platform-level rules.
 
 The outer platform layer (Claude Code deny rules, Codex exec policy `forbidden` entries) is the primary enforcement boundary. `agent-perms` adds semantic classification that the platform cannot express on its own.
 

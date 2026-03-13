@@ -84,7 +84,7 @@ Examples:
   agent-perms exec read-sensitive remote -- gh auth token
   agent-perms exec write remote -- gh issue create --title "bug"
   agent-perms exec read local -- git log --oneline -10
-  agent-perms exec write local -- git commit -m "fix"
+  agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
   agent-perms exec write remote -- git push origin main
   agent-perms exec admin remote -- git push --force
   agent-perms exec read-sensitive remote -- pulumi env open myorg/prod
@@ -261,9 +261,9 @@ Keep commands simple — avoid special shell characters like ` + "`$()`" + `, pi
 heredocs in agent-perms arguments. Complex shell syntax triggers manual approval
 prompts in the permission system. For example, pass commit messages as plain
 quoted strings rather than using command substitution. For multiline git commit
-messages, use multiple ` + "`-m`" + ` flags (git joins them as separate paragraphs):
+messages, write the message to a temp file and use ` + "`-F`" + `:
 
-    agent-perms exec write local -- git commit -m "Title" -m "Body paragraph."
+    agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
 
 ## gh (GitHub CLI)
 
@@ -285,7 +285,7 @@ Scopes: local, remote
     agent-perms exec read local -- git log --oneline -10
     agent-perms exec read local -- git status
     agent-perms exec read remote -- git fetch origin
-    agent-perms exec write local -- git commit -m "fix"
+    agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
     agent-perms exec write local -- git add -p
     agent-perms exec write remote -- git push origin main
     agent-perms exec admin local -- git reset --hard HEAD~1

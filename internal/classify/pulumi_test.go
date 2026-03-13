@@ -158,6 +158,15 @@ func TestClassifyPulumi(t *testing.T) {
 		{name: "pulumi esc init", args: []string{"pulumi", "esc", "init", "myorg/myenv"}, want: types.TierWriteRemote},
 		{name: "pulumi esc rm", args: []string{"pulumi", "esc", "rm", "myorg/myenv"}, want: types.TierAdminRemote},
 
+		// Help flags → read local
+		{name: "pulumi --help", args: []string{"pulumi", "--help"}, want: types.TierReadLocal},
+		{name: "pulumi -h", args: []string{"pulumi", "-h"}, want: types.TierReadLocal},
+		{name: "pulumi help", args: []string{"pulumi", "help"}, want: types.TierReadLocal},
+		{name: "pulumi config set --help", args: []string{"pulumi", "config", "set", "--help"}, want: types.TierReadLocal},
+		{name: "pulumi up --help", args: []string{"pulumi", "up", "--help"}, want: types.TierReadLocal},
+		{name: "pulumi destroy -h", args: []string{"pulumi", "destroy", "-h"}, want: types.TierReadLocal},
+		{name: "pulumi env open --help", args: []string{"pulumi", "env", "open", "--help"}, want: types.TierReadLocal},
+
 		// Unknown
 		{name: "pulumi unknown subcommand", args: []string{"pulumi", "foobar"}, want: types.TierUnknown, unknown: true},
 		{name: "pulumi with no args", args: []string{"pulumi"}, want: types.TierUnknown, unknown: true},

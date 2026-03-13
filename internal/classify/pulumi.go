@@ -128,6 +128,7 @@ var pulumiTiers = map[string]types.Tier{
 	"convert": types.TierWriteLocal,
 
 	// misc read
+	"help":           types.TierReadLocal,
 	"console":        types.TierReadRemote, // opens stack in Pulumi Console
 	"gen-completion": types.TierReadLocal,
 
@@ -147,6 +148,20 @@ func classifyPulumi(args []string) Result {
 	if len(args) == 0 {
 		return Result{CLI: "pulumi", Tier: types.TierUnknown, Unknown: true,
 			BaseTierNote: "no pulumi subcommand provided"}
+	}
+
+	// Any command with --help or -h just prints help text; always read-local.
+	if hasHelpFlag(args) {
+		sub, _ := pulumiSubcommand(args)
+		desc := "pulumi --help"
+		if sub != "" && sub != "help" {
+			desc = fmt.Sprintf("pulumi %s --help", sub)
+		}
+		return Result{
+			CLI: "pulumi", Subcommand: sub,
+			Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+			BaseTierNote: desc + " (help output; read-only)",
+		}
 	}
 
 	// Skip global flags to find the subcommand.

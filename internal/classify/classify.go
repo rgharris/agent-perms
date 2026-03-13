@@ -18,6 +18,20 @@ type Result struct {
 	Unknown      bool       // true if the subcommand was not found in the classification DB
 }
 
+// hasHelpFlag returns true if any arg is "--help" or "-h".
+// Commands with help flags just print usage text and are always read-only.
+func hasHelpFlag(args []string) bool {
+	for _, arg := range args {
+		if arg == "--help" || arg == "-h" || arg == "help" {
+			return true
+		}
+		if arg == "--" {
+			return false // stop at separator
+		}
+	}
+	return false
+}
+
 // SupportedCLIs returns the list of CLI names that agent-perms can classify.
 func SupportedCLIs() []string {
 	return []string{"gh", "git", "go", "pulumi"}

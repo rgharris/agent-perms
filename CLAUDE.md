@@ -11,6 +11,7 @@ When you add a new CLI classifier (a new `internal/classify/<cli>.go` file), upd
 5. **`examples/claude-settings.md`** — add example profiles for the new CLI
 6. **`examples/codex-settings.md`** — add example profiles for the new CLI
 7. **`docs/new-clis-to-add.md`** — remove the CLI from the candidates list if it was listed there
+8. **`internal/settings/settings_test.go`** — add `"Bash(<cli> *)"` to the deny array in `TestValidateClean`
 
 ## Auditing an Existing CLI Classifier
 
@@ -21,12 +22,17 @@ When updating a classifier to add missing subcommands, follow this process:
    - `git help -a`
    - `go help` + `go help mod` / `go help work` for sub-groups
    - `pulumi --help` + `pulumi <group> --help` for each subcommand group
+   - `kubectl --help` + `kubectl <subcommand> --help` for each subcommand
 2. **Extract all subcommand paths** — List every valid `<group> <sub>` combination from the help output
 3. **Diff against the classifier** — Compare against the keys in the `*Tiers` map and any special-case `switch` handlers in `internal/classify/<cli>.go`
 4. **Classify each gap** — Determine the correct tier (read/write/admin × local/remote) for each missing subcommand
 5. **Check key depth** — Verify the classifier function supports the required key depth (e.g., `gh` supports 3-token keys like `repo autolink list`)
-6. **Build, test, install** — `go build ./...`, `go test ./...`, `go install ./cmd/agent-perms`
-7. **Verify with explain** — Run `agent-perms explain <cli> <subcommand>` for new entries
+6. **Check flag bypass gaps** — For each flag-dependent handler, verify:
+   - Combined short flags (e.g., `-fd` containing `-f` for force)
+   - Embedded value forms (e.g., `--force-with-lease=ref`)
+   - Prefix/alias forms (e.g., `+refspec` for git force push)
+7. **Build, test, install** — `go build ./...`, `go test ./...`, `go install ./cmd/agent-perms`
+8. **Verify with explain** — Run `agent-perms explain <cli> <subcommand>` for new entries
 
 ## Classification Decisions
 
@@ -39,6 +45,14 @@ or can hide write/destructive behavior behind a helper interface.
   state mutations.
 - `go test` is `write local` because tests execute project code and can mutate
   local state.
+- `kubectl exec` is `write remote` because it runs arbitrary commands in
+  containers — commonly used for debugging, similar reasoning to `go test`.
+- `kubectl get secret` / `kubectl describe secret` escalate to
+  `read-sensitive remote` because output can expose secret data.
+- `kubectl drain` is `admin remote` because it evicts all pods from a node,
+  risking service disruption.
+- `kubectl proxy` and `kubectl port-forward` are `read-sensitive remote`
+  because they open privileged network access without mutating state.
 - Default/recommended profile is `write-local` for practical day-to-day usage;
   `read` remains available for stricter environments.
 

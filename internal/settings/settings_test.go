@@ -28,6 +28,23 @@ func TestGetProfile(t *testing.T) {
 					t.Errorf("exec allow rule missing '--': %s", r)
 				}
 			}
+			// All profiles should include commit message file rules
+			hasRead := false
+			hasWrite := false
+			for _, r := range p.Allow {
+				if r == "Read("+commitMsgFile+")" {
+					hasRead = true
+				}
+				if r == "Write("+commitMsgFile+")" {
+					hasWrite = true
+				}
+			}
+			if !hasRead {
+				t.Error("profile missing Read rule for commit message file")
+			}
+			if !hasWrite {
+				t.Error("profile missing Write rule for commit message file")
+			}
 		})
 	}
 }
@@ -457,6 +474,8 @@ func TestFilterNonAgentPerms(t *testing.T) {
 		"Bash(some-tool *)",
 		"Bash(agent-perms exec read -- gh *)",
 		"Bash(another *)",
+		"Read(" + commitMsgFile + ")",
+		"Write(" + commitMsgFile + ")",
 	}
 	got := filterNonAgentPerms(rules)
 	if len(got) != 2 {

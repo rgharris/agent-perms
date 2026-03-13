@@ -295,7 +295,7 @@ Scopes: local, remote
     agent-perms exec read local -- git log --oneline -10
     agent-perms exec read local -- git status
     agent-perms exec read remote -- git fetch origin
-    agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
+    agent-perms exec write local -- git commit -F /tmp/agent-perms-commit-msg.txt
     agent-perms exec write local -- git add -p
     agent-perms exec write remote -- git push origin main
     agent-perms exec admin local -- git reset --hard HEAD~1

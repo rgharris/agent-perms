@@ -231,6 +231,10 @@ func TestClaudeInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Use a temp HOME so no existing settings.json triggers diff output.
+			tmpHome := t.TempDir()
+			t.Setenv("HOME", tmpHome)
+
 			output := captureStdout(t, func() {
 				code := run(tt.args)
 				if code != tt.wantCode {
@@ -275,17 +279,52 @@ func TestClaudeInitMerge(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(output, "my-server") {
-		t.Error("merged output missing mcpServers")
-	}
-	if !strings.Contains(output, "some-tool") {
-		t.Error("merged output missing non-agent-perms allow rule")
-	}
+	// Output is a unified diff showing added agent-perms rules.
 	if !strings.Contains(output, "exec read local -- *") {
-		t.Error("merged output missing new agent-perms read local rule")
+		t.Error("merged diff missing new agent-perms read local rule")
 	}
 	if !strings.Contains(output, "exec read remote -- *") {
-		t.Error("merged output missing new agent-perms read remote rule")
+		t.Error("merged diff missing new agent-perms read remote rule")
+	}
+	// Diff should reference the file path in headers.
+	if !strings.Contains(output, path) {
+		t.Error("merged diff missing file path in header")
+	}
+}
+
+func TestClaudeInitMergeWrite(t *testing.T) {
+	// --write should produce the merged JSON directly (no diff).
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	existing := `{
+  "mcpServers": {"my-server": {}},
+  "permissions": {
+    "allow": ["Bash(some-tool *)"],
+    "deny": []
+  }
+}`
+	if err := os.WriteFile(path, []byte(existing), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	code := run([]string{"claude", "init", "--merge=" + path, "--write"})
+	if code != 0 {
+		t.Fatalf("merge --write failed with exit code %d", code)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "my-server") {
+		t.Error("written file missing mcpServers")
+	}
+	if !strings.Contains(content, "some-tool") {
+		t.Error("written file missing non-agent-perms allow rule")
+	}
+	if !strings.Contains(content, "exec read local -- *") {
+		t.Error("written file missing new agent-perms read local rule")
 	}
 }
 
@@ -444,6 +483,10 @@ func TestCodexInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Use a temp HOME so no existing files trigger diff output.
+			tmpHome := t.TempDir()
+			t.Setenv("HOME", tmpHome)
+
 			output := captureStdout(t, func() {
 				code := run(tt.args)
 				if code != tt.wantCode {

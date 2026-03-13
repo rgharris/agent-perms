@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -84,7 +85,7 @@ Examples:
   agent-perms exec read-sensitive remote -- gh auth token
   agent-perms exec write remote -- gh issue create --title "bug"
   agent-perms exec read local -- git log --oneline -10
-  agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
+  agent-perms exec write local -- git commit -F /tmp/agent-perms-commit-msg.txt
   agent-perms exec write remote -- git push origin main
   agent-perms exec admin remote -- git push --force
   agent-perms exec read-sensitive remote -- pulumi env open myorg/prod
@@ -290,11 +291,12 @@ session or if the tier is shown in the examples below.
 
 Keep commands simple — avoid special shell characters like ` + "`$()`" + `, pipes, and
 heredocs in agent-perms arguments. Complex shell syntax triggers manual approval
-prompts in the permission system. For multiline git commit messages, use the
-Write tool to create a temp file, then pass it with ` + "`-F`" + `:
+prompts in the permission system. For all git commits, write a temp file and
+pass it with ` + "`-F`" + `:
 
-    1. Write the commit message to /tmp/commit-msg.txt using the Write tool
-    2. agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
+    1. Read /tmp/agent-perms-commit-msg.txt (the Write tool requires a read first; ignore "not found" errors)
+    2. Write the commit message to /tmp/agent-perms-commit-msg.txt using the Write tool
+    3. agent-perms exec write local -- git commit -F /tmp/agent-perms-commit-msg.txt
 
 ## gh (GitHub CLI)
 
@@ -333,7 +335,7 @@ Scopes: local, remote
     agent-perms exec read local -- git log --oneline -10
     agent-perms exec read local -- git status
     agent-perms exec read remote -- git fetch origin
-    agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
+    agent-perms exec write local -- git commit -F /tmp/agent-perms-commit-msg.txt
     agent-perms exec write local -- git add -p
     agent-perms exec write remote -- git push origin main
     agent-perms exec admin local -- git reset --hard HEAD~1
@@ -579,15 +581,18 @@ func cmdClaudeInit(args []string, opts agentexec.Options) int {
 		return writeSettingsFile(writePath, data)
 	}
 
-	// Print the generated settings.
-	fmt.Println(string(data))
+	// Show diff against existing file when available, otherwise print full output.
+	existing, existsErr := os.ReadFile(writePath)
+	if existsErr == nil {
+		showDiff(writePath, existing, data)
+	} else {
+		fmt.Println(string(data))
+	}
 
 	// In interactive mode, prompt to write.
 	if isTerminal() && writePath != "" {
 		verb := "create"
-		if mergePath != "" {
-			verb = "overwrite"
-		} else if _, err := os.Stat(writePath); err == nil {
+		if existsErr == nil {
 			verb = "overwrite"
 		}
 		fmt.Fprintf(os.Stderr, "\n%s %s? [Y/n]: ", capitalize(verb), writePath)
@@ -808,19 +813,30 @@ func cmdCodexInit(args []string) int {
 
 	agentsMD := codex.GenerateAGENTSMD()
 
-	// Print the generated rules.
-	fmt.Print(rules)
-	fmt.Fprintf(os.Stderr, "\n--- AGENTS.md (%d lines) ---\n", strings.Count(agentsMD, "\n"))
-	fmt.Print(agentsMD)
+	// Show diffs against existing files when available, otherwise print full output.
+	existingRules, rulesErr := os.ReadFile(rulesPath)
+	if rulesErr == nil {
+		showDiff(rulesPath, existingRules, []byte(rules))
+	} else {
+		fmt.Print(rules)
+	}
+
+	existingMD, mdErr := os.ReadFile(agentsMDPath)
+	if mdErr == nil {
+		showDiff(agentsMDPath, existingMD, []byte(agentsMD))
+	} else {
+		fmt.Fprintf(os.Stderr, "\n--- AGENTS.md (%d lines) ---\n", strings.Count(agentsMD, "\n"))
+		fmt.Print(agentsMD)
+	}
 
 	// In interactive mode, prompt to write.
 	if isTerminal() {
 		rulesVerb := "create"
-		if _, err := os.Stat(rulesPath); err == nil {
+		if rulesErr == nil {
 			rulesVerb = "overwrite"
 		}
 		mdVerb := "create"
-		if _, err := os.Stat(agentsMDPath); err == nil {
+		if mdErr == nil {
 			mdVerb = "overwrite"
 		}
 		fmt.Fprintf(os.Stderr, "\n%s %s and %s %s? [Y/n]: ", capitalize(rulesVerb), rulesPath, mdVerb, agentsMDPath)
@@ -950,6 +966,50 @@ func cmdCodexValidate(args []string, opts agentexec.Options) int {
 		return 1
 	}
 	return 0
+}
+
+// showDiff prints a unified diff between old and new content for the given path.
+// Falls back to printing the full new content if diff is unavailable.
+func showDiff(path string, old, new []byte) {
+	diffPath, err := exec.LookPath("diff")
+	if err != nil {
+		fmt.Println(string(new))
+		return
+	}
+
+	oldFile, err := os.CreateTemp("", "agent-perms-old-*")
+	if err != nil {
+		fmt.Println(string(new))
+		return
+	}
+	defer os.Remove(oldFile.Name())
+
+	newFile, err := os.CreateTemp("", "agent-perms-new-*")
+	if err != nil {
+		fmt.Println(string(new))
+		return
+	}
+	defer os.Remove(newFile.Name())
+
+	oldFile.Write(old)
+	oldFile.Close()
+	newFile.Write(new)
+	newFile.Close()
+
+	cmd := exec.Command(diffPath, "-u", "--label", path+" (current)", "--label", path+" (new)", oldFile.Name(), newFile.Name())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		// diff exits 1 when files differ — that's expected.
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return
+		}
+		// Unexpected error; fall back to full output.
+		fmt.Println(string(new))
+		return
+	}
+	// Exit code 0 means no differences.
+	fmt.Fprintf(os.Stderr, "%s: no changes\n", path)
 }
 
 // isTerminal reports whether stdin is a terminal.

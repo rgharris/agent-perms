@@ -157,6 +157,11 @@ done:
 // cmdExec validates the claimed tier and runs the command.
 // args is everything after "exec": [<action>, [<scope>], "--", <cli>, ...]
 func cmdExec(args []string, opts agentexec.Options) int {
+	// Extract agent-perms flags (--json, --on-unknown=*) from before "--".
+	// This allows "agent-perms exec --json read remote -- gh pr list"
+	// which matches the allow pattern "Bash(agent-perms exec read remote -- *)".
+	args, opts = extractGlobalFlags(args, opts)
+
 	// Find the "--" separator.
 	sepIdx := -1
 	for i, a := range args {
@@ -229,6 +234,32 @@ func parseTierTokens(tokens []string) (types.Tier, error) {
 	default:
 		return types.TierUnknown, fmt.Errorf("too many permission tokens before '--' (expected 2, got %d)", len(tokens))
 	}
+}
+
+// extractGlobalFlags strips agent-perms global flags (--json, --on-unknown=*)
+// from args, applying them to opts. This allows flags to appear after the
+// subcommand name (e.g., "agent-perms explain --json kubectl get pods")
+// so they don't break allow-pattern matching.
+//
+// Only leading flags are consumed — extraction stops at the first non-flag
+// token or "--". Everything from that point onward passes through untouched
+// so that CLI-specific flags (like gh's --json) are preserved.
+func extractGlobalFlags(args []string, opts agentexec.Options) ([]string, agentexec.Options) {
+	i := 0
+	for ; i < len(args); i++ {
+		switch args[i] {
+		case "--json":
+			opts.JSON = true
+		case "--on-unknown=deny":
+			opts.OnUnknown = agentexec.OnUnknownDeny
+		case "--on-unknown=allow":
+			opts.OnUnknown = agentexec.OnUnknownAllow
+		default:
+			// First non-agent-perms token — stop extracting.
+			return args[i:], opts
+		}
+	}
+	return nil, opts
 }
 
 // tierExecString formats a tier and command as a suggested exec invocation.
@@ -364,6 +395,11 @@ Scopes: local, remote
 // cmdExplain prints the full classification for a command without running it.
 // args is everything after "explain": [<cli>, ...]
 func cmdExplain(args []string, opts agentexec.Options) int {
+	// Extract agent-perms flags (--json, --on-unknown=*) from before the CLI name.
+	// This allows "agent-perms explain --json kubectl get pods"
+	// which matches the allow pattern "Bash(agent-perms explain *)".
+	args, opts = extractGlobalFlags(args, opts)
+
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "ERROR: explain requires a command\nUsage: agent-perms explain <command...>\n")
 		return 1

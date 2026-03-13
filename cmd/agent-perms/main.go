@@ -290,11 +290,11 @@ session or if the tier is shown in the examples below.
 
 Keep commands simple — avoid special shell characters like ` + "`$()`" + `, pipes, and
 heredocs in agent-perms arguments. Complex shell syntax triggers manual approval
-prompts in the permission system. For example, pass commit messages as plain
-quoted strings rather than using command substitution. For multiline git commit
-messages, write the message to a temp file and use ` + "`-F`" + `:
+prompts in the permission system. For multiline git commit messages, use the
+Write tool to create a temp file, then pass it with ` + "`-F`" + `:
 
-    agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
+    1. Write the commit message to /tmp/commit-msg.txt using the Write tool
+    2. agent-perms exec write local -- git commit -F /tmp/commit-msg.txt
 
 ## gh (GitHub CLI)
 

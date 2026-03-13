@@ -56,6 +56,16 @@ or can hide write/destructive behavior behind a helper interface.
 - Default/recommended profile is `write-local` for practical day-to-day usage;
   `read` remains available for stricter environments.
 
+## Maintaining This File
+
+Update CLAUDE.md whenever you encounter a recurring pattern, non-obvious decision,
+or process that should be followed consistently. If you find yourself explaining
+something that would help future sessions, add it here. Examples:
+
+- New classification rationale → add to "Classification Decisions"
+- New checklist step discovered during a task → add to the relevant checklist
+- A mistake that a rule here would have prevented → add the rule
+
 ## Commit Practices
 
 ### During Development

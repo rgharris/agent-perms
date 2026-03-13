@@ -11,7 +11,7 @@
 > Code's and has not been tested as extensively. Please report issues.
 
 These examples show how to configure Codex CLI's exec policy to use
-agent-perms as a permission layer for `gh`, `git`, `pulumi`, `go`, and other CLIs.
+agent-perms as a permission layer for `gh`, `git`, `kubectl`, `pulumi`, `go`, and other CLIs.
 
 ---
 
@@ -126,6 +126,7 @@ prefix_rule(
 prefix_rule(pattern = ["gh"], decision = "forbidden")
 prefix_rule(pattern = ["git"], decision = "forbidden")
 prefix_rule(pattern = ["go"], decision = "forbidden")
+prefix_rule(pattern = ["kubectl"], decision = "forbidden")
 prefix_rule(pattern = ["pulumi"], decision = "forbidden")
 ```
 

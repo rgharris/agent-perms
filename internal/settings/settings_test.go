@@ -321,6 +321,7 @@ func TestValidateClean(t *testing.T) {
 				"Bash(gh *)",
 				"Bash(git *)",
 				"Bash(go *)",
+				"Bash(kubectl *)",
 				"Bash(pulumi *)",
 				"Bash(agent-perms exec admin *)"
 			]

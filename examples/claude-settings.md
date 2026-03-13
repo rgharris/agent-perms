@@ -8,7 +8,7 @@
 > Run `agent-perms claude validate` to check your settings for common issues.
 
 These examples show how to configure Claude Code's `settings.json` to use
-agent-perms as a permission layer for `gh`, `git`, `pulumi`, and other CLIs.
+agent-perms as a permission layer for `gh`, `git`, `kubectl`, `pulumi`, and other CLIs.
 
 ---
 
@@ -97,6 +97,39 @@ Claude can run tests, build, format, and manage modules automatically. Cache-cle
     "allow": [
       "Bash(agent-perms exec read local -- go *)",
       "Bash(agent-perms exec write local -- go *)"
+    ]
+  }
+}
+```
+
+### Kubernetes: read-only cluster access
+
+Claude can inspect cluster state and read logs, but cannot modify resources.
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(agent-perms exec read remote -- kubectl *)",
+      "Bash(agent-perms exec read local -- kubectl *)"
+    ]
+  }
+}
+```
+
+### Kubernetes: read + deploy, gate deletes
+
+Claude can read cluster state and apply manifests. Deletes and drains require approval.
+Secret access is gated behind `read-sensitive`.
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(agent-perms exec read remote -- kubectl *)",
+      "Bash(agent-perms exec read local -- kubectl *)",
+      "Bash(agent-perms exec write remote -- kubectl *)",
+      "Bash(agent-perms exec write local -- kubectl *)"
     ]
   }
 }

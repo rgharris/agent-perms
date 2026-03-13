@@ -34,7 +34,7 @@ func hasHelpFlag(args []string) bool {
 
 // SupportedCLIs returns the list of CLI names that agent-perms can classify.
 func SupportedCLIs() []string {
-	return []string{"gh", "git", "go", "pulumi"}
+	return []string{"gh", "git", "go", "kubectl", "pulumi"}
 }
 
 // Classify classifies a command specified as a slice of tokens.
@@ -59,6 +59,8 @@ func Classify(args []string) Result {
 		return classifyPulumi(args[1:])
 	case "go":
 		return classifyGo(args[1:])
+	case "kubectl":
+		return classifyKubectl(args[1:])
 	default:
 		return Result{
 			CLI:          cli,

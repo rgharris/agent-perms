@@ -247,7 +247,7 @@ you can adjust.
 
     agent-perms exec <action> <scope> -- <cli> <subcommand> [args...]
 
-You MUST wrap the following CLIs with agent-perms: gh, git, go, pulumi.
+You MUST wrap the following CLIs with agent-perms: gh, git, go, kubectl, pulumi.
 The user's permission rules will likely deny these commands when run directly.
 
 The claimed tier must exactly match what the command requires. There is no
@@ -321,6 +321,25 @@ Scopes: local (all go ops are local)
     agent-perms exec write local -- go mod tidy
     agent-perms exec write local -- go get github.com/foo/bar@latest
     agent-perms exec admin local -- go clean -modcache
+
+## kubectl (Kubernetes CLI)
+
+Actions: read, read-sensitive, write, admin
+Scopes: local, remote
+
+    agent-perms exec read remote -- kubectl get pods
+    agent-perms exec read remote -- kubectl describe deploy my-app
+    agent-perms exec read remote -- kubectl logs my-pod
+    agent-perms exec read-sensitive remote -- kubectl get secret my-secret -o yaml
+    agent-perms exec read-sensitive remote -- kubectl port-forward pod/my-pod 8080:80
+    agent-perms exec read local -- kubectl config view
+    agent-perms exec write local -- kubectl config use-context prod
+    agent-perms exec write remote -- kubectl apply -f manifest.yaml
+    agent-perms exec write remote -- kubectl scale deploy/my-app --replicas=3
+    agent-perms exec write remote -- kubectl exec -it my-pod -- bash
+    agent-perms exec admin remote -- kubectl delete pod my-pod
+    agent-perms exec admin remote -- kubectl drain node1
+    agent-perms exec admin local -- kubectl config delete-context old-ctx
 `)
 	return 0
 }

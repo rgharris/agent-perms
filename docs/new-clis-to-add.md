@@ -1,4 +1,4 @@
-agent-perms currently supports gh, git, pulumi, and go. Here are the best candidates to add
+agent-perms currently supports gh, git, go, kubectl, and pulumi. Here are the best candidates to add
 next, ranked by impact:
 
 ## Top Candidates
@@ -10,12 +10,12 @@ next, ranked by impact:
   - admin:local: docker rm, docker rmi, docker system prune
   - admin:remote: docker push
 
-### 2. Cloud CLIs (aws, az, gcloud, kubectl) — High blast-radius
+### 2. Cloud CLIs (aws, az, gcloud) — High blast-radius
 
   These have the most dangerous write/admin tiers:
-  - read: aws s3 ls, kubectl get, gcloud projects list
-  - write:remote: aws s3 cp, kubectl apply, gcloud deploy
-  - admin:remote: aws s3 rm, kubectl delete, gcloud projects delete
+  - read: aws s3 ls, gcloud projects list
+  - write:remote: aws s3 cp, gcloud deploy
+  - admin:remote: aws s3 rm, gcloud projects delete
 
 ### 3. npm/npx/yarn — High frequency
 

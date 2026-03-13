@@ -250,9 +250,7 @@ func classifyPulumiEnv(args []string) Result {
 			Tier: types.TierReadSensitiveRemote, BaseTier: types.TierReadSensitiveRemote,
 			BaseTierNote: "pulumi env open (resolves and exposes secret values)"}
 	case "run":
-		return Result{CLI: "pulumi", Subcommand: "env run",
-			Tier: types.TierReadSensitiveRemote, BaseTier: types.TierReadSensitiveRemote,
-			BaseTierNote: "pulumi env run (injects resolved secrets into command environment)"}
+		return classifyPulumiEnvRun(rest)
 
 	// Write:remote — creates or modifies ESC environment data in Pulumi Cloud
 	case "init", "edit", "set", "clone", "rotate":
@@ -279,6 +277,85 @@ func classifyPulumiEnv(args []string) Result {
 		Tier: types.TierUnknown, BaseTier: types.TierUnknown,
 		BaseTierNote: fmt.Sprintf("pulumi env %s: not in classification DB", sub),
 		Unknown:      true}
+}
+
+// classifyPulumiEnvRun classifies "pulumi env run <env> [--] <command...>".
+// Like esc run, the resolved tier is the maximum of the outer tier
+// (read-sensitive remote) and the recursively classified inner command.
+func classifyPulumiEnvRun(args []string) Result {
+	outerTier := types.TierReadSensitiveRemote
+
+	// Find the inner command after "--".
+	innerArgs := pulumiEnvRunInnerCommand(args)
+
+	if len(innerArgs) == 0 {
+		return Result{
+			CLI: "pulumi", Subcommand: "env run",
+			Tier: outerTier, BaseTier: outerTier,
+			BaseTierNote: "pulumi env run (injects resolved secrets into command environment)",
+		}
+	}
+
+	innerResult := Classify(innerArgs)
+
+	if innerResult.Unknown {
+		return Result{
+			CLI: "pulumi", Subcommand: "env run",
+			Tier: types.TierUnknown, BaseTier: outerTier,
+			BaseTierNote: "pulumi env run (injects resolved secrets into command environment)",
+			InnerResult:  &innerResult,
+			Unknown:      true,
+		}
+	}
+
+	resolved := types.Max(outerTier, innerResult.Tier)
+	var effects []string
+	if resolved != outerTier {
+		effects = append(effects, fmt.Sprintf("inner command '%s %s' → %s",
+			innerResult.CLI, innerResult.Subcommand, innerResult.Tier))
+	}
+
+	return Result{
+		CLI: "pulumi", Subcommand: "env run",
+		Tier: resolved, BaseTier: outerTier,
+		BaseTierNote: "pulumi env run (injects resolved secrets into command environment)",
+		FlagEffects:  effects,
+		InnerResult:  &innerResult,
+	}
+}
+
+// pulumiEnvRunInnerCommand extracts the inner command from "pulumi env run" args.
+// args is everything after "run" (env name, flags, --, command).
+func pulumiEnvRunInnerCommand(args []string) []string {
+	// Look for explicit "--" separator.
+	for i, arg := range args {
+		if arg == "--" {
+			if i+1 < len(args) {
+				return args[i+1:]
+			}
+			return nil
+		}
+	}
+
+	// No "--". Skip the environment name (first positional), then the rest
+	// is the inner command.
+	positionals := 0
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		positionals++
+		if positionals == 1 {
+			// This is the environment name; everything after is the inner command.
+			if i+1 < len(args) {
+				return args[i+1:]
+			}
+			return nil
+		}
+	}
+
+	return nil
 }
 
 // classifyPulumiEnvTag classifies "pulumi env tag" commands.

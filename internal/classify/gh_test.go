@@ -68,6 +68,33 @@ func TestClassifyGHAPI(t *testing.T) {
 	}
 }
 
+func TestClassifyGHHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want types.Tier
+	}{
+		// Help flags → read local
+		{name: "gh --help", args: []string{"gh", "--help"}, want: types.TierReadLocal},
+		{name: "gh -h", args: []string{"gh", "-h"}, want: types.TierReadLocal},
+		{name: "gh help", args: []string{"gh", "help"}, want: types.TierReadLocal},
+		{name: "gh pr create --help", args: []string{"gh", "pr", "create", "--help"}, want: types.TierReadLocal},
+		{name: "gh repo delete --help", args: []string{"gh", "repo", "delete", "--help"}, want: types.TierReadLocal},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Classify(tt.args)
+			if got.Tier != tt.want {
+				t.Errorf("Classify(%v) tier = %v, want %v", tt.args, got.Tier, tt.want)
+			}
+			if got.Unknown {
+				t.Errorf("Classify(%v) unexpected unknown=true", tt.args)
+			}
+		})
+	}
+}
+
 func TestTierComparison(t *testing.T) {
 	tests := []struct {
 		claimed  types.Tier

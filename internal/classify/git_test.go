@@ -170,6 +170,14 @@ func TestClassifyGit(t *testing.T) {
 		{name: "git --no-pager log", args: []string{"git", "--no-pager", "log"}, want: types.TierReadLocal},
 		{name: "git -c key=val commit", args: []string{"git", "-c", "core.autocrlf=false", "commit", "-m", "x"}, want: types.TierWriteLocal},
 
+		// Help flags → read local
+		{name: "git --help", args: []string{"git", "--help"}, want: types.TierReadLocal},
+		{name: "git -h", args: []string{"git", "-h"}, want: types.TierReadLocal},
+		{name: "git help", args: []string{"git", "help"}, want: types.TierReadLocal},
+		{name: "git commit --help", args: []string{"git", "commit", "--help"}, want: types.TierReadLocal},
+		{name: "git push --help", args: []string{"git", "push", "--help"}, want: types.TierReadLocal},
+		{name: "git reset --hard --help", args: []string{"git", "reset", "--hard", "--help"}, want: types.TierReadLocal},
+
 		// Unknown
 		{name: "git unknown subcommand", args: []string{"git", "foobar"}, want: types.TierUnknown, unknown: true},
 		{name: "git with no args", args: []string{"git"}, want: types.TierUnknown, unknown: true},

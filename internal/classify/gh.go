@@ -257,6 +257,20 @@ func classifyGH(args []string) Result {
 			BaseTierNote: "no gh subcommand provided"}
 	}
 
+	// Any command with --help or -h just prints help text; always read-local.
+	if hasHelpFlag(args) {
+		sub := args[0]
+		desc := "gh --help"
+		if sub != "--help" && sub != "-h" && sub != "help" {
+			desc = fmt.Sprintf("gh %s --help", sub)
+		}
+		return Result{
+			CLI: "gh", Subcommand: sub,
+			Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+			BaseTierNote: desc + " (help output; read-only)",
+		}
+	}
+
 	sub := args[0]
 
 	// Special case: gh api has its own method-level classification.

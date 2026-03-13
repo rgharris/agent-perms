@@ -31,6 +31,7 @@
 package classify
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/rgharris/agent-perms/internal/types"
@@ -66,6 +67,20 @@ func classifyGo(args []string) Result {
 			Tier:         types.TierUnknown,
 			Unknown:      true,
 			BaseTierNote: "no go subcommand provided",
+		}
+	}
+
+	// Any command with --help or -h just prints help text; always read-local.
+	if hasHelpFlag(args) {
+		sub := args[0]
+		desc := "go --help"
+		if sub != "--help" && sub != "-h" && sub != "help" {
+			desc = fmt.Sprintf("go %s --help", sub)
+		}
+		return Result{
+			CLI: "go", Subcommand: sub,
+			Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+			BaseTierNote: desc + " (help output; read-only)",
 		}
 	}
 

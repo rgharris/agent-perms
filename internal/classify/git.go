@@ -167,6 +167,20 @@ func classifyGit(args []string) Result {
 			BaseTierNote: "no git subcommand provided"}
 	}
 
+	// Any command with --help or -h just prints help text; always read-local.
+	if hasHelpFlag(args) {
+		sub, _ := gitSubcommand(args)
+		desc := "git --help"
+		if sub != "" && sub != "help" {
+			desc = fmt.Sprintf("git %s --help", sub)
+		}
+		return Result{
+			CLI: "git", Subcommand: sub,
+			Tier: types.TierReadLocal, BaseTier: types.TierReadLocal,
+			BaseTierNote: desc + " (help output; read-only)",
+		}
+	}
+
 	// Skip git global flags (e.g., -C <dir>, --git-dir=<path>, --no-pager).
 	sub, rest := gitSubcommand(args)
 	if sub == "" {

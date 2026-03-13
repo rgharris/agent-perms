@@ -72,6 +72,13 @@ func TestClassifyGo(t *testing.T) {
 		{name: "go clean -cache", args: []string{"go", "clean", "-cache"}, want: types.TierAdminLocal},
 		{name: "go clean -modcache", args: []string{"go", "clean", "-modcache"}, want: types.TierAdminLocal},
 
+		// Help flags → read local
+		{name: "go --help", args: []string{"go", "--help"}, want: types.TierReadLocal},
+		{name: "go -h", args: []string{"go", "-h"}, want: types.TierReadLocal},
+		{name: "go help", args: []string{"go", "help"}, want: types.TierReadLocal},
+		{name: "go test --help", args: []string{"go", "test", "--help"}, want: types.TierReadLocal},
+		{name: "go build --help", args: []string{"go", "build", "--help"}, want: types.TierReadLocal},
+
 		// Unknown
 		{name: "go unknown subcommand", args: []string{"go", "foobar"}, want: types.TierUnknown, unknown: true},
 		{name: "go with no args", args: []string{"go"}, want: types.TierUnknown, unknown: true},
